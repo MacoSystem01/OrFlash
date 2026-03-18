@@ -1,22 +1,43 @@
 import { PageTransition } from '@/components/shared/Animations';
-import { useOrderStore } from '@/app/store/orderStore';
+import { useOrderStore, type Order } from '@/app/store/orderStore';
 import { useAuthStore } from '@/app/store/authStore';
 import { motion } from 'framer-motion';
 import { Check, Package, Truck, MapPin, ChefHat } from 'lucide-react';
-import type { OrderStatus } from '@/mock/data';
+import { useState } from 'react';
+import ClientMap from '@/components/map/ClientMap';
+import { DriversMarkers } from '@/components/map/MapMarkers';
+import { DeliveryStatus } from '@/components/map/DeliveryStatus';
+
+type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'in-transit' | 'delivered' | 'cancelled';
 
 const steps: { status: OrderStatus; label: string; icon: typeof Check }[] = [
   { status: 'pending', label: 'Pedido recibido', icon: Package },
   { status: 'confirmed', label: 'Confirmado', icon: Check },
   { status: 'preparing', label: 'Preparando', icon: ChefHat },
-  { status: 'picked_up', label: 'Recogido', icon: Truck },
-  { status: 'in_transit', label: 'En camino', icon: Truck },
+  { status: 'in-transit', label: 'En camino', icon: Truck },
   { status: 'delivered', label: 'Entregado', icon: MapPin },
 ];
 
-const statusOrder: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'in_transit', 'delivered'];
+const statusOrder: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'in-transit', 'delivered'];
+
+// Repartidor asignado a la orden
+const assignedDriver = {
+  id: '1',
+  name: 'Carlos López',
+  lat: 3.4516,
+  lng: -76.532,
+  status: 'available' as const,
+};
+
+// Puntos clave en la ruta
+const routePoints = [
+  { lat: 3.4272, lng: -76.5225, label: 'Tienda', time: 'Recogiendo...' },
+  { lat: 3.4380, lng: -76.5300, label: 'En camino', time: 'En 8 min' },
+  { lat: 3.4450, lng: -76.5200, label: 'Destino', time: 'En 15 min' },
+];
 
 const ClientOrderTracking = () => {
+  const [showMap, setShowMap] = useState(true);
   const user = useAuthStore((s) => s.user);
   const orders = useOrderStore((s) => s.orders);
   const activeOrder = orders.find((o) => o.clientId === user?.id && !['delivered', 'cancelled'].includes(o.status))
@@ -41,23 +62,40 @@ const ClientOrderTracking = () => {
         <p className="text-muted-foreground text-sm">{activeOrder.id} · {activeOrder.storeName}</p>
       </div>
 
-      {/* Simulated map */}
-      <div className="surface overflow-hidden h-48 relative">
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'radial-gradient(circle, hsl(240, 5%, 20%) 1px, transparent 1px)',
-          backgroundSize: '20px 20px'
-        }} />
-        <motion.div
-          animate={{ x: [0, 100, 180], y: [80, 40, 90] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-          className="absolute w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm shadow-lg glow"
-        >
-          🛵
-        </motion.div>
-        <div className="absolute bottom-4 left-4 glass rounded-xl px-3 py-2 text-xs">
-          <p className="font-medium">ETA: {activeOrder.estimatedDelivery}</p>
-          <p className="text-muted-foreground">{activeOrder.driverName || 'Asignando driver...'}</p>
+      {/* Map Section */}
+      {showMap && (
+        <div className="rounded-2xl overflow-hidden border border-border shadow-xl">
+          <ClientMap center={[routePoints[1].lat, routePoints[1].lng]} zoom={14}>
+            <DriversMarkers drivers={[assignedDriver]} />
+          </ClientMap>
         </div>
+      )}
+
+      {/* Delivery Status Card */}
+      <DeliveryStatus status={activeOrder.status as OrderStatus} estimatedTime={activeOrder.estimatedDelivery} />
+
+      {/* Driver Info Card */}
+      <div className="rounded-2xl p-5 bg-linear-to-br from-violet-500/10 to-purple-500/10 border border-border space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Repartidor asignado</p>
+            <h3 className="font-bold">{assignedDriver.name}</h3>
+          </div>
+          <div className="text-3xl">🚴</div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center gap-1">
+            <span>📱</span>
+            <span className="text-muted-foreground">+57 300 123 4567</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span>⭐</span>
+            <span className="text-muted-foreground">4.8 (125 entregas)</span>
+          </div>
+        </div>
+        <button className="w-full py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 text-xs font-medium transition-colors">
+          Contactar repartidor
+        </button>
       </div>
 
       {/* Timeline */}

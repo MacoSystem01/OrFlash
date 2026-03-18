@@ -13,7 +13,7 @@ export default function ClientCart() {
     return (
       <ClientLayout>
         <PageTransition className="flex flex-col items-center justify-center min-h-[70vh] gap-5 p-6">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+          <div className="w-24 h-24 rounded-3xl bg-linear-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
             <ShoppingBag className="w-12 h-12 text-violet-500" />
           </div>
           <div className="text-center">
@@ -22,7 +22,7 @@ export default function ClientCart() {
           </div>
           <button
             onClick={() => router.visit('/client/home')}
-            className="px-6 py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold text-sm shadow-lg shadow-violet-500/30 flex items-center gap-2"
+            className="px-6 py-3 rounded-2xl bg-linear-to-r from-violet-600 to-purple-600 text-white font-semibold text-sm shadow-lg shadow-violet-500/30 flex items-center gap-2"
           >
             Explorar tiendas <ArrowRight className="w-4 h-4" />
           </button>
@@ -78,7 +78,7 @@ export default function ClientCart() {
 
         <button
           onClick={() => router.visit('/client/checkout')}
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-sm shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"
+          className="w-full py-4 rounded-2xl bg-linear-to-r from-violet-600 to-purple-600 text-white font-bold text-sm shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"
         >
           Ir a pagar <ArrowRight className="w-4 h-4" />
         </button>

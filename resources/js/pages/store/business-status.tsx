@@ -17,8 +17,8 @@ export default function StoreBusinessStatus() {
         {/* Estado principal */}
         <div className={`rounded-2xl p-8 text-center transition-all duration-500 ${
           isOpen
-            ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/30'
-            : 'bg-gradient-to-br from-slate-500 to-slate-600 shadow-xl shadow-slate-500/30'
+            ? 'bg-linear-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/30'
+            : 'bg-linear-to-br from-slate-500 to-slate-600 shadow-xl shadow-slate-500/30'
         }`}>
           <div className="text-6xl mb-4">{isOpen ? '🟢' : '🔴'}</div>
           <h2 className="text-2xl font-bold text-white mb-2">
@@ -47,7 +47,7 @@ export default function StoreBusinessStatus() {
             { label: 'Pedidos de hoy',      value: '0',        icon: ShoppingBag, gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-violet-500/40' },
             { label: 'Tiempo promedio',     value: '— min',    icon: TrendingUp,  gradient: 'from-amber-500 to-orange-500',  shadow: 'shadow-amber-500/40'  },
           ].map((card) => (
-            <div key={card.label} className={`rounded-2xl p-5 bg-gradient-to-br ${card.gradient} text-white shadow-xl ${card.shadow}`}>
+            <div key={card.label} className={`rounded-2xl p-5 bg-linear-to-br ${card.gradient} text-white shadow-xl ${card.shadow}`}>
               <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center mb-3">
                 <card.icon className="w-4 h-4 text-white" />
               </div>
@@ -68,7 +68,7 @@ export default function StoreBusinessStatus() {
               { label: 'Zona de entrega definida',  done: false },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-3">
-                <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${item.done ? 'bg-emerald-500/15' : 'bg-secondary'}`}>
+                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${item.done ? 'bg-emerald-500/15' : 'bg-secondary'}`}>
                   <CheckCircle className={`w-4 h-4 ${item.done ? 'text-emerald-500' : 'text-muted-foreground'}`} />
                 </div>
                 <span className={`text-sm ${item.done ? 'text-foreground' : 'text-muted-foreground'}`}>{item.label}</span>

@@ -1,9 +1,10 @@
 import { PageTransition, StaggerList, StaggerItem } from '@/components/shared/Animations';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { usePage } from '@inertiajs/react';
+import { usePage, router } from '@inertiajs/react';
 import { DollarSign, ShoppingBag, Users, Truck, TrendingUp, ArrowUpRight, Activity } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import AdminLayout from '@/layouts/AdminLayout';
+import AdminMap from '@/components/map/AdminMap';
 
 const chartData = [
   { name: 'Lun', ingresos: 850000 },
@@ -51,8 +52,39 @@ const summary = [
   { label: 'Cancelados hoy',     value: '0', dot: 'bg-red-400'   },
 ];
 
+// Tiendas para el mapa
+const mapStores = [
+  { id: '1', name: 'Tienda Central',   category: 'Abarrotes', rating: 4.8, deliveryFee: 2500, isOpen: true,  lat: 3.4516, lng: -76.532 },
+  { id: '2', name: 'Farmacia Salud',   category: 'Farmacia',  rating: 4.5, deliveryFee: 2000, isOpen: true,  lat: 3.4372, lng: -76.5225 },
+  { id: '3', name: 'Pan y Café',       category: 'Panadería', rating: 4.2, deliveryFee: 1500, isOpen: false, lat: 3.4600, lng: -76.5450 },
+  { id: '4', name: 'Carnes del Sur',   category: 'Carnicería',rating: 4.6, deliveryFee: 3000, isOpen: true,  lat: 3.4280, lng: -76.5100 },
+  { id: '5', name: 'Verduras Frescas', category: 'Verdulería',rating: 4.3, deliveryFee: 2000, isOpen: true,  lat: 3.4450, lng: -76.5300 },
+];
+
+// Repartidores para el mapa
+const mapDrivers = [
+  { id: '1', name: 'Carlos López', lat: 3.4516, lng: -76.532, status: 'available' as const },
+  { id: '2', name: 'María García', lat: 3.4372, lng: -76.5225, status: 'busy' as const },
+  { id: '3', name: 'Juan Pérez', lat: 3.4600, lng: -76.5450, status: 'available' as const },
+];
+
+// Rutas de pedidos activos
+const mapRoutes = [
+  [
+    { lat: 3.4516, lng: -76.532, label: 'Tienda Central' },
+    { lat: 3.4400, lng: -76.5300, label: 'En camino' },
+    { lat: 3.4300, lng: -76.5200, label: 'Destino' },
+  ],
+  [
+    { lat: 3.4372, lng: -76.5225, label: 'Farmacia Salud' },
+    { lat: 3.4350, lng: -76.5150, label: 'En camino' },
+    { lat: 3.4280, lng: -76.5280, label: 'Destino' },
+  ],
+];
+
 export default function AdminDashboard() {
-  const orders: any[] = [];
+  const { orders = [] } = usePage().props as any;
+  const recentOrders = Array.isArray(orders) ? orders.slice(0, 6) : [];
 
   return (
     <AdminLayout>
@@ -61,7 +93,7 @@ export default function AdminDashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <h1 className="text-2xl font-bold">Inicio</h1>
             <p className="text-muted-foreground text-sm">Vista general del sistema OrFlash</p>
           </div>
           <span className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-emerald-500 text-white shadow-lg shadow-emerald-500/40">
@@ -70,11 +102,20 @@ export default function AdminDashboard() {
           </span>
         </div>
 
+        {/* Mapa en tiempo real */}
+        <AdminMap 
+          stores={mapStores} 
+          drivers={mapDrivers} 
+          routes={mapRoutes}
+          centerLat={3.4400}
+          centerLng={-76.5280}
+        />
+
         {/* Métricas */}
         <StaggerList className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {metrics.map((m) => (
             <StaggerItem key={m.label}>
-              <div className={`rounded-2xl p-5 bg-gradient-to-br ${m.gradient} shadow-xl ${m.shadow} text-white`}>
+              <div className={`rounded-2xl p-5 bg-linear-to-br ${m.gradient} shadow-xl ${m.shadow} text-white`}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
                     <m.icon className="w-5 h-5 text-white" />
@@ -149,7 +190,10 @@ export default function AdminDashboard() {
               <h3 className="font-semibold">Pedidos recientes</h3>
               <p className="text-xs text-muted-foreground">Últimas transacciones del sistema</p>
             </div>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700 transition-colors shadow-lg shadow-violet-500/30">
+            <button 
+              onClick={() => router.visit('/admin/orders')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700 transition-colors shadow-lg shadow-violet-500/30"
+            >
               Ver todos <ArrowUpRight className="w-3 h-3" />
             </button>
           </div>
@@ -165,7 +209,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {orders.length === 0 && (
+                {recentOrders.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-10 text-center text-muted-foreground text-sm">
                       <div className="flex flex-col items-center gap-2">
@@ -178,12 +222,12 @@ export default function AdminDashboard() {
                     </td>
                   </tr>
                 )}
-                {orders.map((o) => (
+                {recentOrders.map((o: any) => (
                   <tr key={o.id} className="border-t border-border/50 hover:bg-secondary/30 transition-colors">
                     <td className="py-3 text-xs font-mono">{o.id}</td>
-                    <td className="py-3">{o.clientName}</td>
-                    <td className="py-3 text-muted-foreground">{o.storeName}</td>
-                    <td className="py-3 font-semibold">${o.total.toLocaleString()}</td>
+                    <td className="py-3">{o.user?.name || o.client_name || 'Sin nombre'}</td>
+                    <td className="py-3 text-muted-foreground">{o.store?.name || o.store_name || 'Sin tienda'}</td>
+                    <td className="py-3 font-semibold">${o.total?.toLocaleString() || 0}</td>
                     <td className="py-3"><StatusBadge status={o.status} /></td>
                   </tr>
                 ))}

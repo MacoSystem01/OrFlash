@@ -7,7 +7,7 @@ export default function PendingApproval() {
       <Head title="Cuenta en revisión" />
       <div className="max-w-md w-full text-center space-y-6">
 
-        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center mx-auto">
+        <div className="w-24 h-24 rounded-3xl bg-linear-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center mx-auto">
           <Clock className="w-12 h-12 text-amber-500" />
         </div>
 
@@ -25,7 +25,7 @@ export default function PendingApproval() {
             { icon: Mail,        text: 'Recibirás un correo de confirmación', color: 'text-blue-500' },
           ].map((item) => (
             <div key={item.text} className="flex items-center gap-3">
-              <item.icon className={`w-5 h-5 ${item.color} flex-shrink-0`} />
+              <item.icon className={`w-5 h-5 ${item.color} shrink-0`} />
               <span className="text-sm">{item.text}</span>
             </div>
           ))}

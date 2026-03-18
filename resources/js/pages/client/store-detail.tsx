@@ -46,7 +46,7 @@ export default function ClientStoreDetail() {
     <ClientLayout>
       <PageTransition className="space-y-0">
         {/* Banner */}
-        <div className={`bg-gradient-to-br ${store.gradient} p-5 pt-4 text-white`}>
+        <div className={`bg-linear-to-br ${store.gradient} p-5 pt-4 text-white`}>
           <button
             onClick={() => router.visit('/client/home')}
             className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors mb-4"
@@ -89,7 +89,7 @@ export default function ClientStoreDetail() {
                   {storeProducts.filter((p) => p.category === cat).map((product) => (
                     <StaggerItem key={product.id}>
                       <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center text-2xl flex-shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center text-2xl shrink-0">
                           🛍️
                         </div>
                         <div className="flex-1 min-w-0">
@@ -99,10 +99,10 @@ export default function ClientStoreDetail() {
                         {product.inStock ? (
                           <button
                             onClick={() => addToCart(product.id)}
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all shadow-lg ${
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all shadow-lg ${
                               cart[product.id]
-                                ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/40'
-                                : 'bg-gradient-to-br from-violet-600 to-purple-600 shadow-violet-500/40'
+                                ? 'bg-linear-to-br from-emerald-500 to-teal-600 shadow-emerald-500/40'
+                                : 'bg-linear-to-br from-violet-600 to-purple-600 shadow-violet-500/40'
                             }`}
                           >
                             {cart[product.id] ? (
@@ -128,7 +128,7 @@ export default function ClientStoreDetail() {
           <div className="fixed bottom-20 left-4 right-4 z-20">
             <button
               onClick={() => router.visit('/client/cart')}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold shadow-xl shadow-violet-500/40 flex items-center justify-center gap-3"
+              className="w-full py-4 rounded-2xl bg-linear-to-r from-violet-600 to-purple-600 text-white font-bold shadow-xl shadow-violet-500/40 flex items-center justify-center gap-3"
             >
               <ShoppingCart className="w-5 h-5" />
               Ver carrito ({cartCount} items)

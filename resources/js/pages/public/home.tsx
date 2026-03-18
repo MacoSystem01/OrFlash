@@ -60,7 +60,7 @@ export default function PublicHome() {
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-50 h-50 flex items-start justify-center overflow-visible bg-gradient-to-br from-wife-600 to-wife-700">
+            <div className="w-50 h-50 flex items-start justify-center overflow-visible bg-linear-to-br from-wife-600 to-wife-700">
               <img
                 src="/logo-png.png"
                 alt="Logo"
@@ -72,7 +72,7 @@ export default function PublicHome() {
             <Link href="/register" className="px-4 py-2 rounded-xl border border-border text-sm font-medium hover:bg-secondary transition-colors">
               Registrarse
             </Link>
-            <Link href="/login" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-semibold shadow-lg shadow-violet-500/30 hover:opacity-90 transition-opacity">
+            <Link href="/login" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-violet-600 to-purple-600 text-white text-sm font-semibold shadow-lg shadow-violet-500/30 hover:opacity-90 transition-opacity">
               <LogIn className="w-4 h-4" /> Iniciar sesión
             </Link>
           </div>
@@ -80,7 +80,7 @@ export default function PublicHome() {
       </header>
 
       {/* Hero */}
-      <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-blue-700 relative overflow-hidden">
+      <div className="bg-linear-to-br from-violet-600 via-purple-600 to-blue-700 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
         <div className="max-w-6xl mx-auto px-4 py-16 relative z-10">
           <div className="text-center text-white space-y-4 max-w-2xl mx-auto">
@@ -96,7 +96,7 @@ export default function PublicHome() {
               Explora tiendas y productos. Inicia sesión para hacer tu pedido.
             </p>
             <div className="flex items-center gap-3 bg-white rounded-2xl p-2 shadow-2xl mt-6">
-              <Search className="w-5 h-5 text-muted-foreground ml-2 flex-shrink-0" />
+              <Search className="w-5 h-5 text-muted-foreground ml-2 shrink-0" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -105,7 +105,7 @@ export default function PublicHome() {
               />
               <button
                 onClick={() => setShowModal(true)}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-semibold shadow-lg shadow-violet-500/30 flex-shrink-0"
+                className="px-5 py-2.5 rounded-xl bg-linear-to-r from-violet-600 to-purple-600 text-white text-sm font-semibold shadow-lg shadow-violet-500/30 shrink-0"
               >
                 Buscar
               </button>
@@ -123,8 +123,8 @@ export default function PublicHome() {
               <button
                 key={cat}
                 onClick={() => setSelectedCat(cat)}
-                className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap font-medium transition-all flex-shrink-0 ${selectedCat === cat
-                  ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30'
+                className={`px-4 py-2 rounded-xl text-sm whitespace-nowrap font-medium transition-all shrink-0 ${selectedCat === cat
+                  ? 'bg-linear-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30'
                   : 'bg-secondary text-muted-foreground hover:text-foreground'
                   }`}
               >
@@ -171,7 +171,7 @@ export default function PublicHome() {
                 onClick={() => setShowModal(true)}
                 className="rounded-2xl border border-border bg-card overflow-hidden hover:shadow-xl transition-all cursor-pointer group"
               >
-                <div className={`h-24 bg-gradient-to-r ${store.gradient} relative flex items-center justify-center`}>
+                <div className={`h-24 bg-linear-to-r ${store.gradient} relative flex items-center justify-center`}>
                   <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
                   <span className="text-5xl relative z-10 group-hover:scale-110 transition-transform">{store.emoji}</span>
                   <span className={`absolute top-3 right-3 px-2 py-0.5 rounded-full text-xs font-semibold ${store.isOpen ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-300'}`}>
@@ -213,7 +213,7 @@ export default function PublicHome() {
                 onClick={() => setShowModal(true)}
                 className="rounded-2xl border border-border bg-card overflow-hidden hover:shadow-xl transition-all cursor-pointer group"
               >
-                <div className={`h-28 bg-gradient-to-br ${product.gradient} flex items-center justify-center`}>
+                <div className={`h-28 bg-linear-to-br ${product.gradient} flex items-center justify-center`}>
                   <span className="text-5xl group-hover:scale-110 transition-transform">{product.emoji}</span>
                 </div>
                 <div className="p-4">
@@ -223,7 +223,7 @@ export default function PublicHome() {
                     <span className="text-lg font-bold text-violet-600">${product.price.toLocaleString()}</span>
                     <button
                       onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
-                      className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30"
+                      className="w-8 h-8 rounded-xl bg-linear-to-br from-violet-600 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30"
                     >
                       <ShoppingBag className="w-4 h-4 text-white" />
                     </button>
@@ -253,7 +253,7 @@ export default function PublicHome() {
               className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
             >
               <div className="bg-card rounded-3xl border border-border p-8 max-w-sm w-full shadow-2xl text-center space-y-5 pointer-events-auto">
-                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center mx-auto">
+                <div className="w-20 h-20 rounded-3xl bg-linear-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center mx-auto">
                   <Zap className="w-10 h-10 text-violet-500" />
                 </div>
                 <div>
@@ -265,7 +265,7 @@ export default function PublicHome() {
                 <div className="space-y-3">
                   <Link
                     href="/login"
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-sm shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl bg-linear-to-r from-violet-600 to-purple-600 text-white font-bold text-sm shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"
                   >
                     <LogIn className="w-4 h-4" /> Iniciar sesión
                   </Link>

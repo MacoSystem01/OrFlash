@@ -1,5 +1,6 @@
 import { PageTransition, CardHover } from '@/components/shared/Animations';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import type { OrderStatus } from '@/mock/data';
 import AdminLayout from '@/layouts/AdminLayout';
@@ -7,8 +8,8 @@ import AdminLayout from '@/layouts/AdminLayout';
 const statuses: (OrderStatus | 'all')[] = ['all', 'pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'in_transit', 'delivered', 'cancelled'];
 
 export default function AdminOrders() {
+  const { orders = [] } = usePage().props as any;
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
-  const orders: any[] = []; // Luego vendrán de Laravel
 
   const filtered = filter === 'all' ? orders : orders.filter((o) => o.status === filter);
 
@@ -47,13 +48,13 @@ export default function AdminOrders() {
                   <td colSpan={6} className="py-6 text-center text-muted-foreground">No hay pedidos aún</td>
                 </tr>
               )}
-              {filtered.map((o) => (
+              {filtered.map((o: any) => (
                 <tr key={o.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                  <td className="py-3 text-xs">{o.id}</td>
-                  <td className="py-3">{o.clientName}</td>
-                  <td className="py-3 text-muted-foreground">{o.storeName}</td>
-                  <td className="py-3">{o.items.length}</td>
-                  <td className="py-3">${o.total.toLocaleString()}</td>
+                  <td className="py-3 text-xs font-mono">{o.id}</td>
+                  <td className="py-3">{o.user?.name || o.client_name || 'Sin nombre'}</td>
+                  <td className="py-3 text-muted-foreground">{o.store?.name || o.store_name || 'Sin tienda'}</td>
+                  <td className="py-3">{o.items?.length || o.quantity || 0}</td>
+                  <td className="py-3 font-semibold">${o.total?.toLocaleString() || 0}</td>
                   <td className="py-3"><StatusBadge status={o.status} /></td>
                 </tr>
               ))}

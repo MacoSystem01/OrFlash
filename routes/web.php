@@ -23,13 +23,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Rutas ADMIN
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::inertia('dashboard',  'admin/dashboard')->name('dashboard');
-    Route::inertia('users',      'admin/users')->name('users');
-    Route::inertia('stores',     'admin/stores')->name('stores');
-    Route::inertia('drivers',    'admin/drivers')->name('drivers');
-    Route::inertia('orders',     'admin/orders')->name('orders');
-    Route::inertia('analytics',  'admin/analytics')->name('analytics');
-    Route::inertia('settings',   'admin/settings')->name('settings');
+    Route::get('dashboard',  [App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('orders',     [App\Http\Controllers\Admin\AdminController::class, 'orders'])->name('orders');
+    Route::get('users',      [App\Http\Controllers\Admin\AdminController::class, 'users'])->name('users');
+    Route::get('stores',     [App\Http\Controllers\Admin\AdminController::class, 'stores'])->name('stores');
+    Route::get('drivers',    [App\Http\Controllers\Admin\AdminController::class, 'drivers'])->name('drivers');
+    Route::get('analytics',  [App\Http\Controllers\Admin\AdminController::class, 'analytics'])->name('analytics');
+    Route::get('settings',   [App\Http\Controllers\Admin\AdminController::class, 'settings'])->name('settings');
 });
 
 // Rutas CLIENT
@@ -76,6 +76,10 @@ Route::post('/login', [App\Http\Controllers\Auth\LoginController::class, 'store'
 
 Route::post('/register', [App\Http\Controllers\Auth\RegisterController::class, 'store'])
     ->middleware('guest')->name('register.custom');
+
+// Logout
+Route::post('/logout', [App\Http\Controllers\Auth\LogoutController::class, 'store'])
+    ->middleware('auth')->name('logout');
 
 Route::inertia('/pending-approval', 'auth/pending-approval')->name('pending');
 

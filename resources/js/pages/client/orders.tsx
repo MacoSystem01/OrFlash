@@ -17,7 +17,7 @@ export default function ClientOrders() {
 
         {orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+            <div className="w-20 h-20 rounded-3xl bg-linear-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
               <Package className="w-10 h-10 text-violet-500" />
             </div>
             <h2 className="text-lg font-semibold">Sin pedidos aún</h2>

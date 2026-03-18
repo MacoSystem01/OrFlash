@@ -50,7 +50,7 @@ export default function AdminUsers() {
             const count = users.filter((u) => u.role === role).length;
             const Icon = cfg.icon;
             return (
-              <div key={role} className={`rounded-2xl p-4 bg-gradient-to-br ${cfg.gradient} text-white shadow-lg`}>
+              <div key={role} className={`rounded-2xl p-4 bg-linear-to-br ${cfg.gradient} text-white shadow-lg`}>
                 <Icon className="w-5 h-5 mb-2 opacity-80" />
                 <p className="text-2xl font-bold">{count}</p>
                 <p className="text-xs text-white/75">{cfg.label}s</p>
@@ -77,14 +77,14 @@ export default function AdminUsers() {
                   return (
                     <tr key={u.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
                       <td className="px-5 py-3.5 flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${cfg.gradient} flex items-center justify-center text-white font-bold shadow-md`}>
+                        <div className={`w-9 h-9 rounded-xl bg-linear-to-br ${cfg.gradient} flex items-center justify-center text-white font-bold shadow-md`}>
                           {u.name.charAt(0)}
                         </div>
                         <span className="font-medium">{u.name}</span>
                       </td>
                       <td className="px-5 py-3.5 text-muted-foreground">{u.email}</td>
                       <td className="px-5 py-3.5">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r ${cfg.gradient} shadow-sm`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white bg-linear-to-r ${cfg.gradient} shadow-sm`}>
                           {cfg.label}
                         </span>
                       </td>

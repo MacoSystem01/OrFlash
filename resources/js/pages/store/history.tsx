@@ -24,7 +24,7 @@ export default function StoreHistory() {
             { label: 'Cancelados',  value: cancelled,                    gradient: 'from-red-500 to-rose-600',      shadow: 'shadow-red-500/40',    icon: XCircle     },
             { label: 'Ingresos',    value: `$${revenue.toLocaleString()}`,gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-violet-500/40', icon: DollarSign  },
           ].map((s) => (
-            <div key={s.label} className={`rounded-2xl p-5 bg-gradient-to-br ${s.gradient} text-white shadow-xl ${s.shadow}`}>
+            <div key={s.label} className={`rounded-2xl p-5 bg-linear-to-br ${s.gradient} text-white shadow-xl ${s.shadow}`}>
               <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center mb-3">
                 <s.icon className="w-4 h-4 text-white" />
               </div>

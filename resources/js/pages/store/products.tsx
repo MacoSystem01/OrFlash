@@ -50,7 +50,7 @@ export default function StoreProducts() {
             <h1 className="text-2xl font-bold">Catálogo</h1>
             <p className="text-muted-foreground text-sm">{products.length} productos registrados</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-semibold shadow-lg shadow-violet-500/30">
+          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-linear-to-r from-violet-600 to-purple-600 text-white text-sm font-semibold shadow-lg shadow-violet-500/30">
             <Plus className="w-4 h-4" /> Agregar producto
           </button>
         </div>
@@ -62,7 +62,7 @@ export default function StoreProducts() {
             { label: 'En stock',        value: inStock,         gradient: 'from-emerald-500 to-teal-600',  shadow: 'shadow-emerald-500/40',icon: TrendingUp  },
             { label: 'Agotados',        value: outStock,        gradient: 'from-red-500 to-rose-600',      shadow: 'shadow-red-500/40',    icon: ShoppingBag },
           ].map((s) => (
-            <div key={s.label} className={`rounded-2xl p-5 bg-gradient-to-br ${s.gradient} text-white shadow-xl ${s.shadow}`}>
+            <div key={s.label} className={`rounded-2xl p-5 bg-linear-to-br ${s.gradient} text-white shadow-xl ${s.shadow}`}>
               <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center mb-3">
                 <s.icon className="w-4 h-4 text-white" />
               </div>
@@ -90,7 +90,7 @@ export default function StoreProducts() {
           return (
             <div key={cat}>
               <div className="flex items-center gap-2 mb-3">
-                <div className={`w-2 h-6 rounded-full bg-gradient-to-b ${categoryColors[cat] ?? 'from-slate-400 to-slate-500'}`} />
+                <div className={`w-2 h-6 rounded-full bg-linear-to-b ${categoryColors[cat] ?? 'from-slate-400 to-slate-500'}`} />
                 <h2 className="font-bold">{cat}</h2>
                 <span className="text-xs text-muted-foreground">({catProducts.length})</span>
               </div>
@@ -100,7 +100,7 @@ export default function StoreProducts() {
                     <div className={`rounded-2xl border overflow-hidden transition-all ${p.inStock ? 'border-border bg-card' : 'border-red-500/20 bg-red-500/5'}`}>
                       <div className="p-4 flex items-center gap-4">
                         {/* Icon */}
-                        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${categoryColors[cat] ?? 'from-slate-400 to-slate-500'} flex items-center justify-center text-2xl shadow-lg flex-shrink-0`}>
+                        <div className={`w-14 h-14 rounded-2xl bg-linear-to-br ${categoryColors[cat] ?? 'from-slate-400 to-slate-500'} flex items-center justify-center text-2xl shadow-lg shrink-0`}>
                           {p.image}
                         </div>
 
@@ -128,7 +128,7 @@ export default function StoreProducts() {
                       </div>
 
                       {/* Bottom bar */}
-                      <div className={`h-1 w-full bg-gradient-to-r ${p.inStock ? (categoryColors[cat] ?? 'from-slate-400 to-slate-500') : 'from-red-400 to-rose-500'}`} />
+                      <div className={`h-1 w-full bg-linear-to-r ${p.inStock ? (categoryColors[cat] ?? 'from-slate-400 to-slate-500') : 'from-red-400 to-rose-500'}`} />
                     </div>
                   </StaggerItem>
                 ))}

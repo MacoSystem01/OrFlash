@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -31,13 +31,15 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
 
         {/* Contenido */}
         <div className="relative z-10 text-center text-white space-y-6">
-          <div className="w-full h-50 rounded-3xl bg-white flex items-center justify-center mx-auto shadow-2xl">
-            <img
-              src="/logo-png.png"
-              alt="Logo"
-              className="w-full h-full object-contain"
-            />
-          </div>
+          <Link href="/">
+            <div className="w-full h-50 rounded-3xl bg-white flex items-center justify-center mx-auto shadow-2xl cursor-pointer">
+              <img
+                src="/logo-png.png"
+                alt="Logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
+          </Link>
           <div>
             <p className="text-violet-200 text-lg mt-2">Entregas rápidas a tu puerta</p>
           </div>

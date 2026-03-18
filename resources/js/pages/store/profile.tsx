@@ -18,7 +18,7 @@ export default function StoreProfile() {
     <StoreLayout>
       <PageTransition className="space-y-6">
         {/* Banner */}
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-6 text-white shadow-xl shadow-emerald-500/30">
+        <div className="rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 p-6 text-white shadow-xl shadow-emerald-500/30">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-3xl font-bold backdrop-blur-sm">
               🏪
@@ -52,7 +52,7 @@ export default function StoreProfile() {
         <div className="space-y-2">
           {menuItems.map(({ label, icon: Icon, color }) => (
             <button key={label} className="w-full rounded-2xl border border-border bg-card p-4 flex items-center gap-3 hover:bg-secondary/30 transition-colors">
-              <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-sm`}>
+              <div className={`w-9 h-9 rounded-xl bg-linear-to-br ${color} flex items-center justify-center shadow-sm`}>
                 <Icon className="w-4 h-4 text-white" />
               </div>
               <span className="flex-1 text-sm font-medium text-left">{label}</span>

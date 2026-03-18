@@ -64,7 +64,7 @@ function FileUpload({ label, preview, inputRef, onChange, accept = 'image/*', op
             <CheckCircle className="w-5 h-5" />
             {typeof preview === 'string' && preview.startsWith('data:image')
               ? <img src={preview} className="w-16 h-16 object-cover rounded-lg mx-auto" alt="" />
-              : <span className="text-sm font-medium truncate max-w-[200px]">{preview}</span>}
+              : <span className="text-sm font-medium truncate max-w-50">{preview}</span>}
           </div>
         ) : (
           <div className="space-y-1">
@@ -79,7 +79,7 @@ function FileUpload({ label, preview, inputRef, onChange, accept = 'image/*', op
 
 function SectionHeader({ num, title, gradient }: { num: string; title: string; gradient: string }) {
   return (
-    <div className={`rounded-xl bg-gradient-to-r ${gradient} px-4 py-2.5 flex items-center gap-2`}>
+    <div className={`rounded-xl bg-linear-to-r ${gradient} px-4 py-2.5 flex items-center gap-2`}>
       <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold text-white">{num}</div>
       <h3 className="font-semibold text-white text-sm">{title}</h3>
     </div>
@@ -174,9 +174,9 @@ export default function Register() {
       <Head title="Crear cuenta — OrFlash" />
 
       {/* Panel izquierdo decorativo */}
-      <div className="hidden lg:flex lg:w-2/5 bg-gradient-to-br from-violet-600 via-purple-600 to-blue-700 relative overflow-hidden flex-col items-center justify-center p-12">
-        <div className="absolute top-[-80px] left-[-80px] w-80 h-80 rounded-full bg-white/10" />
-        <div className="absolute bottom-[-60px] right-[-60px] w-64 h-64 rounded-full bg-white/10" />
+      <div className="hidden lg:flex lg:w-2/5 bg-linear-to-br from-violet-600 via-purple-600 to-blue-700 relative overflow-hidden flex-col items-center justify-center p-12">
+        <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white/10" />
+        <div className="absolute -bottom-15 -right-15 w-64 h-64 rounded-full bg-white/10" />
         <div className="relative z-10 text-center text-white space-y-6">
           <div className="w-full h-50 rounded-3xl bg-white flex items-center justify-center mx-auto shadow-2xl">
             <img
@@ -210,7 +210,7 @@ export default function Register() {
         <div className="w-full max-w-lg space-y-6 py-8">
 
           <div className="flex lg:hidden items-center justify-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <span className="text-2xl font-bold">OrFlash</span>
@@ -227,7 +227,7 @@ export default function Register() {
                 {roles.map(r => (
                   <button key={r.id} onClick={() => setRole(r.id as Role)}
                     className="w-full rounded-2xl border border-border bg-card p-5 flex items-center gap-4 hover:shadow-lg transition-all group">
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${r.gradient} flex items-center justify-center text-3xl shadow-lg ${r.shadow} flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                    <div className={`w-14 h-14 rounded-2xl bg-linear-to-br ${r.gradient} flex items-center justify-center text-3xl shadow-lg ${r.shadow} shrink-0 group-hover:scale-110 transition-transform`}>
                       {r.emoji}
                     </div>
                     <div className="flex-1 text-left">
@@ -265,7 +265,7 @@ export default function Register() {
 
               {role !== 'client' && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 flex items-start gap-2">
-                  <Shield className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <Shield className="w-4 h-4 mt-0.5 shrink-0" />
                   <span>Requiere aprobación del administrador. Recibirás un correo cuando sea activada.</span>
                 </div>
               )}
@@ -482,7 +482,7 @@ export default function Register() {
               )}
 
               <button type="submit" disabled={processing}
-                className={`w-full h-12 rounded-2xl bg-gradient-to-r ${btnGradient} text-white font-bold text-sm shadow-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2`}>
+                className={`w-full h-12 rounded-2xl bg-linear-to-r ${btnGradient} text-white font-bold text-sm shadow-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2`}>
                 {processing ? 'Creando cuenta...' : (
                   <><CheckCircle className="w-5 h-5" />{role === 'client' ? 'Crear mi cuenta' : 'Enviar solicitud'}</>
                 )}
