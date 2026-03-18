@@ -23,7 +23,7 @@ class LoginController extends Controller
             return redirect(match($role) {
                 'admin'  => '/admin/dashboard',
                 'client' => '/client/home',
-                'store'  => '/store/dashboard',
+                'store'  => '/store',
                 'driver' => '/driver/dashboard',
                 default  => '/dashboard',
             });

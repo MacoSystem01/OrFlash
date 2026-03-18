@@ -1,13 +1,14 @@
 import { PageTransition, StaggerList, StaggerItem } from '@/components/shared/Animations';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { Package, DollarSign, Clock, TrendingUp, CheckCircle } from 'lucide-react';
+import { Package, DollarSign, Clock, TrendingUp, CheckCircle, Plus } from 'lucide-react';
 import StoreLayout from '@/layouts/StoreLayout';
+import { Link } from '@inertiajs/react';
 
 const metrics = [
-  { label: 'Pedidos activos', value: '0', icon: Package,    gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-violet-500/40' },
-  { label: 'Ingresos hoy',    value: '$0', icon: DollarSign, gradient: 'from-emerald-500 to-teal-600',  shadow: 'shadow-emerald-500/40'},
-  { label: 'Tiempo promedio', value: '—',  icon: Clock,      gradient: 'from-blue-500 to-cyan-600',     shadow: 'shadow-blue-500/40'   },
-  { label: 'Completados',     value: '0',  icon: TrendingUp, gradient: 'from-orange-500 to-amber-500',  shadow: 'shadow-orange-500/40' },
+  { label: 'Pedidos activos', value: '0',  icon: Package,    gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-violet-500/40'  },
+  { label: 'Ingresos hoy',    value: '$0', icon: DollarSign, gradient: 'from-emerald-500 to-teal-600',  shadow: 'shadow-emerald-500/40' },
+  { label: 'Tiempo promedio', value: '—',  icon: Clock,      gradient: 'from-blue-500 to-cyan-600',     shadow: 'shadow-blue-500/40'    },
+  { label: 'Completados',     value: '0',  icon: TrendingUp, gradient: 'from-orange-500 to-amber-500',  shadow: 'shadow-orange-500/40'  },
 ];
 
 export default function StoreDashboard() {
@@ -16,16 +17,26 @@ export default function StoreDashboard() {
   return (
     <StoreLayout>
       <PageTransition className="space-y-6">
+
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Dashboard Tienda</h1>
+            <h1 className="text-2xl font-bold">Inicio Tienda</h1>
             <p className="text-muted-foreground text-sm">Panel de control de tu negocio</p>
           </div>
-          <span className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-emerald-500 text-white shadow-lg shadow-emerald-500/40">
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse" /> Abierta
-          </span>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/store/create"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-4 h-4" /> Crear tienda
+            </Link>
+            <span className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-emerald-500 text-white shadow-lg shadow-emerald-500/40">
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" /> Abierta
+            </span>
+          </div>
         </div>
 
+        {/* Métricas */}
         <StaggerList className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           {metrics.map((m) => (
             <StaggerItem key={m.label}>
@@ -40,6 +51,7 @@ export default function StoreDashboard() {
           ))}
         </StaggerList>
 
+        {/* Pedidos entrantes */}
         <div className="rounded-2xl border border-border bg-card p-5">
           <h2 className="font-semibold mb-4">Pedidos entrantes</h2>
           {activeOrders.length === 0 ? (
@@ -58,13 +70,16 @@ export default function StoreDashboard() {
                     <StatusBadge status={order.status} />
                   </div>
                   <p className="font-semibold text-sm">{order.clientName}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{order.items?.map((i: any) => `${i.name} x${i.quantity}`).join(', ')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {order.items?.map((i: any) => `${i.name} x${i.quantity}`).join(', ')}
+                  </p>
                   <p className="text-sm font-bold text-violet-600 mt-2">${order.total?.toLocaleString()}</p>
                 </div>
               ))}
             </div>
           )}
         </div>
+
       </PageTransition>
     </StoreLayout>
   );

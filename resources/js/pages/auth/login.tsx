@@ -25,22 +25,25 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
       {/* Panel izquierdo — decorativo */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-violet-600 via-purple-600 to-blue-700 relative overflow-hidden flex-col items-center justify-center p-12">
         {/* Círculos decorativos */}
-        <div className="absolute top-[-80px] left-[-80px] w-80 h-80 rounded-full bg-white/10" />
+        {/* <div className="absolute top-[-80px] left-[-80px] w-80 h-80 rounded-full bg-white/10" />
         <div className="absolute bottom-[-60px] right-[-60px] w-64 h-64 rounded-full bg-white/10" />
-        <div className="absolute top-1/2 right-[-40px] w-40 h-40 rounded-full bg-white/5" />
+        <div className="absolute top-1/2 right-[-40px] w-40 h-40 rounded-full bg-white/5" /> */}
 
         {/* Contenido */}
         <div className="relative z-10 text-center text-white space-y-6">
-          <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center mx-auto backdrop-blur-sm shadow-2xl">
-            <Zap className="w-10 h-10 text-white" />
+          <div className="w-full h-50 rounded-3xl bg-white flex items-center justify-center mx-auto shadow-2xl">
+            <img
+              src="/logo-png.png"
+              alt="Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
-            <h1 className="text-4xl font-bold">OrFlash</h1>
             <p className="text-violet-200 text-lg mt-2">Entregas rápidas a tu puerta</p>
           </div>
           <div className="space-y-3 text-left max-w-xs">
             {[
-              { emoji: '⚡', text: 'Entrega en menos de 30 minutos' },
+              { emoji: '⚡', text: 'Entrega en menos de 15 minutos' },
               { emoji: '🛒', text: 'Miles de productos disponibles' },
               { emoji: '📍', text: 'Seguimiento en tiempo real' },
               { emoji: '💳', text: 'Pagos seguros y fáciles' },
@@ -74,10 +77,10 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
           {/* Roles disponibles */}
           <div className="grid grid-cols-4 gap-2">
             {[
-              { role: 'Admin',        emoji: '👑', color: 'bg-violet-500/10 border-violet-500/30 text-violet-600' },
-              { role: 'Cliente',      emoji: '🛒', color: 'bg-blue-500/10 border-blue-500/30 text-blue-600'       },
-              { role: 'Tienda',       emoji: '🏪', color: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600'},
-              { role: 'Domiciliario', emoji: '🛵', color: 'bg-amber-500/10 border-amber-500/30 text-amber-600'    },
+              { role: 'Admin', emoji: '👑', color: 'bg-violet-500/10 border-violet-500/30 text-violet-600' },
+              { role: 'Cliente', emoji: '🛒', color: 'bg-blue-500/10 border-blue-500/30 text-blue-600' },
+              { role: 'Tienda', emoji: '🏪', color: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600' },
+              { role: 'Domiciliario', emoji: '🛵', color: 'bg-amber-500/10 border-amber-500/30 text-amber-600' },
             ].map((r) => (
               <div key={r.role} className={`rounded-xl border p-2 text-center ${r.color}`}>
                 <div className="text-xl">{r.emoji}</div>
