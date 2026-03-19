@@ -63,9 +63,9 @@ const mapStores = [
 
 // Repartidores para el mapa
 const mapDrivers = [
-  { id: '1', name: 'Carlos López', lat: 3.4516, lng: -76.532, status: 'available' as const },
-  { id: '2', name: 'María García', lat: 3.4372, lng: -76.5225, status: 'busy' as const },
-  { id: '3', name: 'Juan Pérez', lat: 3.4600, lng: -76.5450, status: 'available' as const },
+  { id: '1', name: 'Carlos López', lat: 3.4516, lng: -76.532,  status: 'available' as const, vehicleType: 'Moto',      rating: 4.7 },
+  { id: '2', name: 'María García', lat: 3.4372, lng: -76.5225, status: 'busy'      as const, vehicleType: 'Bicicleta', rating: 4.5 },
+  { id: '3', name: 'Juan Pérez',   lat: 3.4600, lng: -76.5450, status: 'available' as const, vehicleType: 'Moto',      rating: 4.9 },
 ];
 
 // Rutas de pedidos activos

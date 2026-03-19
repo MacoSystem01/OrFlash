@@ -34,8 +34,6 @@ const sections = [
     gradient: 'from-violet-500 to-purple-600',
     shadow: 'shadow-violet-500/30',
     fields: [
-      { key: 'platformName', label: 'Nombre de la plataforma', type: 'text', placeholder: 'OrFlash' },
-      { key: 'systemUrl', label: 'URL del sistema', type: 'text', placeholder: 'https://orflash.local' },
       { key: 'contactEmail', label: 'Email de contacto', type: 'email', placeholder: 'support@orflash.com' },
     ],
   },
@@ -47,7 +45,8 @@ const sections = [
     shadow: 'shadow-emerald-500/30',
     fields: [
       { key: 'currency', label: 'Moneda', type: 'select', options: ['COP', 'USD', 'EUR', 'MXN'] },
-      { key: 'commissionPercentage', label: 'Comisión por pedido (%)', type: 'number', placeholder: '15' },
+      { key: 'storeCommissionPercentage', label: 'Comisión Tienda (%)', type: 'number', placeholder: '15' },
+      { key: 'driverCommissionPercentage', label: 'Comisión Domiciliario (%)', type: 'number', placeholder: '15' },
       { key: 'paymentMethod', label: 'Método de pago', type: 'select', options: ['Stripe', 'PayPal', 'MercadoPago'] },
     ],
   },
@@ -111,7 +110,7 @@ export default function AdminSettings() {
 
       // Guardar en localStorage (simulación de base de datos)
       localStorage.setItem('orflash_settings', JSON.stringify(settings));
-      
+
       setSaved(true);
       setError('');
       setTimeout(() => setSaved(false), 3000);
@@ -154,74 +153,123 @@ export default function AdminSettings() {
 
         {/* Settings sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {sections.map((section) => (
-            <div key={section.id} className="rounded-2xl border border-border bg-card overflow-hidden">
-              {/* Section header */}
-              <div className={`p-4 bg-linear-to-r ${section.gradient} flex items-center gap-3`}>
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                  <section.icon className="w-4 h-4 text-white" />
+
+          {/* COLUMNA IZQUIERDA: General + Regional */}
+          <div className="flex flex-col gap-4">
+            {sections.filter(s => s.id === 'general' || s.id === 'regional').map((section) => (
+              <div key={section.id} className="rounded-2xl border border-border bg-card overflow-hidden">
+                <div className={`p-4 bg-linear-to-r ${section.gradient} flex items-center gap-3`}>
+                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                    <section.icon className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-white">{section.title}</h3>
                 </div>
-                <h3 className="font-semibold text-white">{section.title}</h3>
-              </div>
-
-              {/* Fields */}
-              <div className="p-5 space-y-4">
-                {section.fields.map((field) => {
-                  const value = settings[section.id as keyof typeof settings][field.key as any];
-
-                  if (field.type === 'checkbox') {
-                    return (
-                      <div key={field.key} className="flex items-center justify-between">
-                        <label className="text-sm font-medium text-foreground">{field.label}</label>
-                        <button
-                          onClick={() => handleChange(section.id, field.key, !value)}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            value ? 'bg-emerald-500' : 'bg-slate-300'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              value ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    );
-                  }
-
-                  if (field.type === 'select') {
+                <div className="p-5 space-y-4">
+                  {section.fields.map((field) => {
+                    const value = settings[section.id as keyof typeof settings][field.key as any];
+                    if (field.type === 'checkbox') {
+                      return (
+                        <div key={field.key} className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-foreground">{field.label}</label>
+                          <button
+                            onClick={() => handleChange(section.id, field.key, !value)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? 'translate-x-6' : 'translate-x-1'}`} />
+                          </button>
+                        </div>
+                      );
+                    }
+                    if (field.type === 'select') {
+                      return (
+                        <div key={field.key} className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{field.label}</label>
+                          <select
+                            value={value}
+                            onChange={(e) => handleChange(section.id, field.key, e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors"
+                          >
+                            {field.options?.map((option) => <option key={option} value={option}>{option}</option>)}
+                          </select>
+                        </div>
+                      );
+                    }
                     return (
                       <div key={field.key} className="space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{field.label}</label>
-                        <select
+                        <input
+                          type={field.type}
                           value={value}
                           onChange={(e) => handleChange(section.id, field.key, e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors"
-                        >
-                          {field.options?.map((option) => (
-                            <option key={option} value={option}>{option}</option>
-                          ))}
-                        </select>
+                          placeholder={field.placeholder}
+                          className="w-full px-4 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors"
+                        />
                       </div>
                     );
-                  }
-
-                  return (
-                    <div key={field.key} className="space-y-1.5">
-                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{field.label}</label>
-                      <input
-                        type={field.type}
-                        value={value}
-                        onChange={(e) => handleChange(section.id, field.key, e.target.value)}
-                        placeholder={field.placeholder}
-                        className="w-full px-4 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors"
-                      />
-                    </div>
-                  );
-                })}
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {/* COLUMNA DERECHA: Finanzas + Notificaciones */}
+          <div className="flex flex-col gap-4">
+            {sections.filter(s => s.id === 'finances' || s.id === 'notifications').map((section) => (
+              <div key={section.id} className="rounded-2xl border border-border bg-card overflow-hidden">
+                <div className={`p-4 bg-linear-to-r ${section.gradient} flex items-center gap-3`}>
+                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                    <section.icon className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-white">{section.title}</h3>
+                </div>
+                <div className="p-5 space-y-4">
+                  {section.fields.map((field) => {
+                    const value = settings[section.id as keyof typeof settings][field.key as any];
+                    if (field.type === 'checkbox') {
+                      return (
+                        <div key={field.key} className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-foreground">{field.label}</label>
+                          <button
+                            onClick={() => handleChange(section.id, field.key, !value)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? 'translate-x-6' : 'translate-x-1'}`} />
+                          </button>
+                        </div>
+                      );
+                    }
+                    if (field.type === 'select') {
+                      return (
+                        <div key={field.key} className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{field.label}</label>
+                          <select
+                            value={value}
+                            onChange={(e) => handleChange(section.id, field.key, e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors"
+                          >
+                            {field.options?.map((option) => <option key={option} value={option}>{option}</option>)}
+                          </select>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={field.key} className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{field.label}</label>
+                        <input
+                          type={field.type}
+                          value={value}
+                          onChange={(e) => handleChange(section.id, field.key, e.target.value)}
+                          placeholder={field.placeholder}
+                          className="w-full px-4 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
         </div>
 
         {/* Danger zone */}
