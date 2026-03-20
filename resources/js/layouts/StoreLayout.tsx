@@ -8,20 +8,40 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [showStoreMenu, setShowStoreMenu] = useState(false);
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
-  // Si no hay tienda activa, usar layout simple
+  // Si no hay tienda activa, usar layout simple con header mínimo
   if (!store) {
-    return <>{children}</>;
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-card/80 backdrop-blur-xl sticky top-0 z-30">
+          <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+                <Store className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold">OrFlash</span>
+            </div>
+            <button
+              onClick={() => router.post('/logout')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-muted-foreground hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 text-sm font-medium transition-colors"
+            >
+              <LogOut className="w-4 h-4" /> Cerrar sesión
+            </button>
+          </div>
+        </header>
+        <main>{children}</main>
+      </div>
+    );
   }
 
   const storeId = store.id;
 
   const navItems = [
-    { label: 'Dashboard',  path: `/store/${storeId}/dashboard`,       icon: <LayoutDashboard className="w-4 h-4" /> },
-    { label: 'Productos',  path: `/store/${storeId}/products`,        icon: <ShoppingBag className="w-4 h-4" />    },
-    { label: 'Pedidos',    path: `/store/${storeId}/orders`,          icon: <Package className="w-4 h-4" />        },
-    { label: 'Historial',  path: `/store/${storeId}/history`,         icon: <Clock className="w-4 h-4" />          },
-    { label: 'Estado',     path: `/store/${storeId}/business-status`, icon: <ToggleLeft className="w-4 h-4" />     },
-    { label: 'Perfil',     path: `/store/${storeId}/profile`,         icon: <User className="w-4 h-4" />           },
+    { label: 'Dashboard', path: `/store/${storeId}/dashboard`, icon: <LayoutDashboard className="w-4 h-4" /> },
+    { label: 'Productos', path: `/store/${storeId}/products`, icon: <ShoppingBag className="w-4 h-4" /> },
+    { label: 'Pedidos', path: `/store/${storeId}/orders`, icon: <Package className="w-4 h-4" /> },
+    { label: 'Historial', path: `/store/${storeId}/history`, icon: <Clock className="w-4 h-4" /> },
+    { label: 'Estado', path: `/store/${storeId}/business-status`, icon: <ToggleLeft className="w-4 h-4" /> },
+    { label: 'Perfil', path: `/store/${storeId}/profile`, icon: <User className="w-4 h-4" /> },
   ];
 
   return (
@@ -54,9 +74,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                     key={s.id}
                     href={`/store/${s.id}/dashboard`}
                     onClick={() => setShowStoreMenu(false)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                      s.id === store.id ? 'bg-emerald-500/10 text-emerald-600 font-medium' : 'hover:bg-secondary text-muted-foreground'
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${s.id === store.id ? 'bg-emerald-500/10 text-emerald-600 font-medium' : 'hover:bg-secondary text-muted-foreground'
+                      }`}
                   >
                     <Store className="w-3.5 h-3.5" />
                     <span className="truncate">{s.business_name}</span>
@@ -89,11 +108,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             <Link
               key={item.path}
               href={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
-                currentPath === item.path
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${currentPath === item.path
                   ? 'bg-emerald-500/15 text-emerald-600 font-medium'
                   : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-              }`}
+                }`}
             >
               {item.icon}
               {item.label}

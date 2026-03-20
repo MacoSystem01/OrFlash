@@ -1,4 +1,24 @@
 import { Marker, Popup } from 'react-leaflet';
+import L, { type DivIcon, type Icon } from 'leaflet';
+function getSelectedDriverIcon(): DivIcon {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      background: #7c3aed;
+      border: 3px solid white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 0 4px rgba(124,58,237,0.4);
+    ">🚴</div>`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+  });
+}
 
 interface Store {
   id: string;
@@ -39,22 +59,25 @@ export function StoresMarkers({ stores }: { stores: Store[] }) {
   );
 }
 
-export function DriversMarkers({ drivers }: { drivers: Driver[] }) {
+export function DriversMarkers({ drivers, selectedDriverId }: { drivers: Driver[]; selectedDriverId?: string }) {
   return (
     <>
       {drivers.map((driver) => (
-        <Marker key={driver.id} position={[driver.lat, driver.lng]}>
+        <Marker
+          key={driver.id}
+          position={[driver.lat, driver.lng]}
+          {...(driver.id === selectedDriverId ? { icon: getSelectedDriverIcon() } : {})}
+        >
           <Popup>
             <div className="text-sm">
               <h3 className="font-bold">🚴 {driver.name}</h3>
               <p
-                className={`text-xs font-semibold ${
-                  driver.status === 'available'
-                    ? 'text-emerald-600'
-                    : driver.status === 'busy'
-                      ? 'text-orange-600'
-                      : 'text-slate-600'
-                }`}
+                className={`text-xs font-semibold ${driver.status === 'available'
+                  ? 'text-emerald-600'
+                  : driver.status === 'busy'
+                    ? 'text-orange-600'
+                    : 'text-slate-600'
+                  }`}
               >
                 {driver.status === 'available'
                   ? '🟢 Disponible'

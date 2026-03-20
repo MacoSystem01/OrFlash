@@ -2,104 +2,158 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Fortify\Features;
 
-// Página pública
+/*
+|--------------------------------------------------------------------------
+| Página pública
+|--------------------------------------------------------------------------
+*/
 Route::inertia('/', 'public/home')->name('home');
 
-// Redirect post-login según rol
+/*
+|--------------------------------------------------------------------------
+| Redirección post-login
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         $role = Auth::user()?->role;
+
         return redirect(match ($role) {
-            'admin'  => '/admin/dashboard',
-            'client' => '/client/home',
-            'store'  => '/store',
-            'driver' => '/driver/dashboard',
+            'admin'  => route('admin.dashboard'),
+            'client' => route('client.home'),
+            'store'  => route('store.index'),
+            'driver' => route('driver.dashboard'),
             default  => '/',
         });
     })->name('dashboard');
 });
 
-// Rutas ADMIN
-Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('dashboard',  [App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
-    Route::get('orders',     [App\Http\Controllers\Admin\AdminController::class, 'orders'])->name('orders');
-    Route::get('users',      [App\Http\Controllers\Admin\AdminController::class, 'users'])->name('users');
-    Route::get('stores',     [App\Http\Controllers\Admin\AdminController::class, 'stores'])->name('stores');
-    Route::get('drivers',    [App\Http\Controllers\Admin\AdminController::class, 'drivers'])->name('drivers');
-    Route::get('analytics',  [App\Http\Controllers\Admin\AdminController::class, 'analytics'])->name('analytics');
-    Route::get('settings',   [App\Http\Controllers\Admin\AdminController::class, 'settings'])->name('settings');
-});
+/*
+|--------------------------------------------------------------------------
+| ADMIN
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'verified', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
 
-// Rutas CLIENT
-Route::middleware(['auth', 'verified', 'role:client'])->prefix('client')->name('client.')->group(function () {
-    Route::inertia('home',           'client/home')->name('home');
-    Route::inertia('cart',           'client/cart')->name('cart');
-    Route::inertia('checkout',       'client/checkout')->name('checkout');
-    Route::inertia('order-tracking', 'client/order-tracking')->name('order-tracking');
-    Route::inertia('orders',         'client/orders')->name('orders');
-    Route::inertia('profile',        'client/profile')->name('profile');
-    Route::inertia('store/{id}',     'client/store-detail')->name('store-detail');
-});
+        Route::controller(App\Http\Controllers\Admin\AdminController::class)->group(function () {
+            Route::get('dashboard', 'dashboard')->name('dashboard');
+            Route::get('orders', 'orders')->name('orders');
+            Route::get('users', 'users')->name('users');
+            Route::get('stores', 'stores')->name('stores');
+            Route::get('drivers', 'drivers')->name('drivers');
+            Route::get('analytics', 'analytics')->name('analytics');
+            Route::get('settings', 'settings')->name('settings');
+        });
+    });
 
-// Rutas STORE — multi-tienda
-Route::middleware(['auth', 'verified', 'role:store'])->prefix('store')->name('store.')->group(function () {
-    // Panel grupal
-    Route::get('/', [App\Http\Controllers\Store\StoreController::class, 'index'])->name('index');
+/*
+|--------------------------------------------------------------------------
+| CLIENT
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'verified', 'role:client'])
+    ->prefix('client')
+    ->name('client.')
+    ->group(function () {
 
-    // Crear tienda
-    Route::get('create',  [App\Http\Controllers\Store\StoreController::class, 'create'])->name('create');
-    Route::post('create', [App\Http\Controllers\Store\StoreController::class, 'store'])->name('store');
+        Route::inertia('home', 'client/home')->name('home');
+        Route::inertia('cart', 'client/cart')->name('cart');
+        Route::inertia('checkout', 'client/checkout')->name('checkout');
+        Route::inertia('order-tracking', 'client/order-tracking')->name('order-tracking');
+        Route::inertia('orders', 'client/orders')->name('orders');
+        Route::inertia('store/{id}', 'client/store-detail')->name('store-detail');
 
-    // Panel individual por tienda
-    Route::get('{storeId}/dashboard',       [App\Http\Controllers\Store\StoreController::class, 'dashboard'])->name('dashboard');
-    Route::get('{storeId}/products',        [App\Http\Controllers\Store\StoreController::class, 'products'])->name('products');
-    Route::get('{storeId}/orders',          [App\Http\Controllers\Store\StoreController::class, 'orders'])->name('orders');
-    Route::get('{storeId}/history',         [App\Http\Controllers\Store\StoreController::class, 'history'])->name('history');
-    Route::get('{storeId}/business-status', [App\Http\Controllers\Store\StoreController::class, 'businessStatus'])->name('business-status');
-    Route::get('{storeId}/profile',         [App\Http\Controllers\Store\StoreController::class, 'profile'])->name('profile');
-});
+        Route::controller(App\Http\Controllers\Client\ClientProfileController::class)
+            ->prefix('profile')
+            ->name('profile.')
+            ->group(function () {
+                Route::get('/', 'show')->name('index');
+                Route::put('user', 'updateUser')->name('user');
+                Route::put('details', 'updateProfile')->name('details');
+                Route::put('notifications', 'updateNotifications')->name('notifications');
+                Route::post('payment-method', 'savePaymentMethod')->name('payment.save');
+                Route::delete('payment-method', 'deletePaymentMethod')->name('payment.delete');
+            });
+    });
 
-// Rutas DRIVER
-Route::middleware(['auth', 'verified', 'role:driver'])->prefix('driver')->name('driver.')->group(function () {
-    Route::inertia('dashboard',        'driver/dashboard')->name('dashboard');
-    Route::inertia('available-orders', 'driver/available-orders')->name('available-orders');
-    Route::inertia('current-order',    'driver/current-order')->name('current-order');
-    Route::inertia('history',          'driver/history')->name('history');
-    Route::inertia('profile',          'driver/profile')->name('profile');
-});
+/*
+|--------------------------------------------------------------------------
+| STORE (MULTI-TIENDA)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'verified', 'role:store'])
+    ->prefix('store')
+    ->name('store.')
+    ->group(function () {
 
-// Auth custom
+        Route::controller(App\Http\Controllers\Store\StoreController::class)->group(function () {
+
+            Route::get('/', 'index')->name('index');
+
+            // 🔥 SOLO POST (modal)
+            Route::post('/', 'store')->name('store');
+
+            Route::get('{storeId}/dashboard', 'dashboard')->name('dashboard');
+            Route::get('{storeId}/products', 'products')->name('products');
+            Route::get('{storeId}/orders', 'orders')->name('orders');
+            Route::get('{storeId}/history', 'history')->name('history');
+            Route::get('{storeId}/business-status', 'businessStatus')->name('business-status');
+            Route::get('{storeId}/profile', 'profile')->name('profile');
+        });
+    });
+
+/*
+|--------------------------------------------------------------------------
+| DRIVER
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'verified', 'role:driver'])
+    ->prefix('driver')
+    ->name('driver.')
+    ->group(function () {
+
+        Route::inertia('dashboard', 'driver/dashboard')->name('dashboard');
+        Route::inertia('available-orders', 'driver/available-orders')->name('available-orders');
+        Route::inertia('current-order', 'driver/current-order')->name('current-order');
+        Route::inertia('history', 'driver/history')->name('history');
+        Route::inertia('profile', 'driver/profile')->name('profile');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| AUTH
+|--------------------------------------------------------------------------
+*/
 Route::post('/login', [App\Http\Controllers\Auth\LoginController::class, 'store'])
-    ->middleware('guest')->name('login.custom');
+    ->middleware('guest')
+    ->name('login.custom');
 
 Route::post('/register', [App\Http\Controllers\Auth\RegisterController::class, 'store'])
-    ->middleware('guest')->name('register.custom');
+    ->middleware('guest')
+    ->name('register.custom');
 
-// Logout
 Route::post('/logout', [App\Http\Controllers\Auth\LogoutController::class, 'store'])
-    ->middleware('auth')->name('logout');
+    ->middleware('auth')
+    ->name('logout');
 
+/*
+|--------------------------------------------------------------------------
+| Otros
+|--------------------------------------------------------------------------
+*/
 Route::inertia('/pending-approval', 'auth/pending-approval')->name('pending');
 
-// Solo desarrollo
+/*
+|--------------------------------------------------------------------------
+| Preview (DEV)
+|--------------------------------------------------------------------------
+*/
 if (app()->environment('local')) {
-    Route::inertia('preview/admin',           'admin/dashboard');
-    Route::inertia('preview/admin/users',     'admin/users');
-    Route::inertia('preview/admin/stores',    'admin/stores');
-    Route::inertia('preview/admin/drivers',   'admin/drivers');
-    Route::inertia('preview/admin/orders',    'admin/orders');
-    Route::inertia('preview/admin/analytics', 'admin/analytics');
-    Route::inertia('preview/admin/settings',  'admin/settings');
-    Route::inertia('preview/client',          'client/home');
-    Route::inertia('preview/client/orders',   'client/orders');
-    Route::inertia('preview/client/cart',     'client/cart');
-    Route::inertia('preview/client/profile',  'client/profile');
-    Route::inertia('preview/store',           'store/index');
-    Route::inertia('preview/driver',          'driver/dashboard');
-    Route::inertia('preview/driver/orders',   'driver/available-orders');
-    Route::inertia('preview/driver/history',  'driver/history');
+    Route::inertia('preview/store', 'store/index');
 }
 
 require __DIR__ . '/settings.php';
