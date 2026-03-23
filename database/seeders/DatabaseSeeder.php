@@ -8,8 +8,19 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call([
-            UsersSeeder::class,
-        ]);
+        // Base de datos limpia para producción.
+        // No se ejecutan seeders de prueba.
+        //
+        // Para crear el primer administrador ejecuta en terminal:
+        //
+        //   php artisan tinker
+        //
+        //   App\Models\User::create([
+        //       'name'     => 'Admin OrFlash',
+        //       'email'    => 'admin@orflash.com',
+        //       'password' => bcrypt('TU_PASSWORD_SEGURO'),
+        //       'role'     => 'admin',
+        //       'status'   => 'active',
+        //   ]);
     }
 }

@@ -1,21 +1,44 @@
 import { PageTransition, StaggerList, StaggerItem } from '@/components/shared/Animations';
-import { Truck, Phone, MapPin, Package } from 'lucide-react';
+import { Truck, Phone, Mail } from 'lucide-react';
 import AdminLayout from '@/layouts/AdminLayout';
-import DriverMap from '@/components/map/DriverMap';
+import { usePage } from '@inertiajs/react';
 
-const drivers = [
-  { id: '4', name: 'Carlos Domiciliario', phone: '3001112233', zone: 'Centro',  deliveries: 38, online: true,  lat: 3.4516, lng: -76.532 },
-  { id: '5', name: 'Juan Repartidor',     phone: '3005556677', zone: 'Norte',   deliveries: 24, online: false, lat: 3.4600, lng: -76.5450 },
-  { id: '6', name: 'Pedro Mensajero',     phone: '3009998877', zone: 'Sur',     deliveries: 51, online: true,  lat: 3.4280, lng: -76.5100 },
-];
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+interface Driver {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  status: 'active' | 'pending' | 'rejected';
+  created_at: string;
+}
+
+interface PageProps {
+  drivers: Driver[];
+  [key: string]: unknown;
+}
+
+// ─── Configuración ────────────────────────────────────────────────────────────
+
+const statusMap = {
+  active:   { label: 'Activo',        cls: 'bg-emerald-500/15 text-emerald-600' },
+  pending:  { label: 'Pendiente',     cls: 'bg-yellow-500/15  text-yellow-600'  },
+  rejected: { label: 'Deshabilitado', cls: 'bg-slate-500/15   text-slate-500'   },
+};
+
+// ─── Página ───────────────────────────────────────────────────────────────────
 
 export default function AdminDrivers() {
-  const online  = drivers.filter((d) => d.online).length;
-  const offline = drivers.filter((d) => !d.online).length;
+  const { drivers } = usePage<PageProps>().props;
+
+  const active   = drivers.filter(d => d.status === 'active').length;
+  const inactive = drivers.length - active;
 
   return (
     <AdminLayout>
       <PageTransition className="space-y-6">
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -24,23 +47,19 @@ export default function AdminDrivers() {
           </div>
           <div className="flex gap-2">
             <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">
-              {online} online
+              {active} activos
             </span>
             <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-500 text-white shadow-lg shadow-slate-500/30">
-              {offline} offline
+              {inactive} inactivos
             </span>
           </div>
         </div>
 
-        {/* Mapa de domiciliarios activos */}
-        <DriverMap drivers={drivers} centerLat={3.4400} centerLng={-76.5280} />
-
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {[
             { label: 'Total registrados', value: drivers.length, gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-violet-500/40' },
-            { label: 'Online ahora',      value: online,         gradient: 'from-emerald-500 to-teal-600',  shadow: 'shadow-emerald-500/40' },
-            { label: 'Entregas totales',  value: drivers.reduce((a, d) => a + d.deliveries, 0), gradient: 'from-orange-500 to-amber-500', shadow: 'shadow-orange-500/40' },
+            { label: 'Activos',           value: active,         gradient: 'from-emerald-500 to-teal-600',  shadow: 'shadow-emerald-500/40' },
           ].map((s) => (
             <div key={s.label} className={`rounded-2xl p-5 bg-linear-to-br ${s.gradient} text-white shadow-xl ${s.shadow}`}>
               <p className="text-3xl font-bold">{s.value}</p>
@@ -50,30 +69,49 @@ export default function AdminDrivers() {
         </div>
 
         {/* Cards */}
-        <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {drivers.map((d) => (
-            <StaggerItem key={d.id}>
-              <div className="rounded-2xl border border-border bg-card p-5 hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg ${d.online ? 'bg-linear-to-br from-emerald-500 to-teal-600' : 'bg-linear-to-br from-slate-400 to-slate-500'}`}>
-                    {d.name.charAt(0)}
+        {drivers.length === 0 ? (
+          <div className="flex flex-col items-center py-16 gap-4">
+            <div className="w-20 h-20 rounded-3xl bg-violet-500/10 flex items-center justify-center">
+              <Truck className="w-10 h-10 text-violet-500" />
+            </div>
+            <h2 className="text-lg font-semibold">Sin domiciliarios registrados</h2>
+            <p className="text-sm text-muted-foreground">Aparecerán aquí cuando se registren</p>
+          </div>
+        ) : (
+          <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {drivers.map((d) => {
+              const st = statusMap[d.status] ?? statusMap.pending;
+              return (
+                <StaggerItem key={d.id}>
+                  <div className="rounded-2xl border border-border bg-card p-5 hover:shadow-lg transition-shadow">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg bg-linear-to-br from-orange-500 to-amber-500">
+                        {d.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{d.name}</h3>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${st.cls}`}>
+                          {st.label}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Mail  className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{d.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 shrink-0" />
+                        <span>{d.phone ?? '—'}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{d.name}</h3>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${d.online ? 'bg-emerald-500/15 text-emerald-600' : 'bg-slate-500/15 text-slate-500'}`}>
-                      {d.online ? '● Online' : '○ Offline'}
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" />{d.phone}</div>
-                  <div className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5" />Zona {d.zone}</div>
-                  <div className="flex items-center gap-2"><Package className="w-3.5 h-3.5" />{d.deliveries} entregas realizadas</div>
-                </div>
-              </div>
-            </StaggerItem>
-          ))}
-        </StaggerList>
+                </StaggerItem>
+              );
+            })}
+          </StaggerList>
+        )}
+
       </PageTransition>
     </AdminLayout>
   );

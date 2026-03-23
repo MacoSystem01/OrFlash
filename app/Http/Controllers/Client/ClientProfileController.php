@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\ClientPaymentMethod;
 use App\Models\ClientProfile;
+use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +13,31 @@ use Inertia\Inertia;
 
 class ClientProfileController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Home del cliente — tiendas activas desde BD
+    |--------------------------------------------------------------------------
+    */
+    public function home()
+    {
+        $stores = Store::where('status', 'active')
+            ->latest()
+            ->get([
+                'id', 'business_name', 'category', 'zone', 'address',
+                'rating', 'is_open', 'opening_time', 'closing_time',
+                'description', 'images',
+            ]);
+
+        return Inertia::render('client/home', [
+            'stores' => $stores,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Perfil del cliente
+    |--------------------------------------------------------------------------
+    */
     public function show()
     {
         /** @var User $user */

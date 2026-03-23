@@ -2,34 +2,69 @@ import { PageTransition, CardHover } from '@/components/shared/Animations';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import type { OrderStatus } from '@/mock/data';
 import AdminLayout from '@/layouts/AdminLayout';
 
-const statuses: (OrderStatus | 'all')[] = ['all', 'pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'in_transit', 'delivered', 'cancelled'];
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
+type FilterType  = OrderStatus | 'all';
+
+const statuses: FilterType[] = [
+  'all', 'pending', 'confirmed', 'preparing', 'ready',
+  'picked_up', 'in_transit', 'delivered', 'cancelled',
+];
+
+const statusLabels: Record<FilterType, string> = {
+  all:         'Todos',
+  pending:     'Pendiente',
+  confirmed:   'Confirmado',
+  preparing:   'Preparando',
+  ready:       'Listo',
+  picked_up:   'Recogido',
+  in_transit:  'En camino',
+  delivered:   'Entregado',
+  cancelled:   'Cancelado',
+};
+
+// ─── Página ───────────────────────────────────────────────────────────────────
 
 export default function AdminOrders() {
-  const { orders = [] } = usePage().props as any;
-  const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
+  const { orders } = usePage().props as any;
+  const [filter, setFilter] = useState<FilterType>('all');
 
-  const filtered = filter === 'all' ? orders : orders.filter((o) => o.status === filter);
+  const orderList: any[] = orders?.data ?? (Array.isArray(orders) ? orders : []);
+  const filtered = filter === 'all'
+    ? orderList
+    : orderList.filter(o => o.status === filter);
 
   return (
     <AdminLayout>
       <PageTransition className="space-y-6">
-        <h1 className="text-2xl font-bold">Pedidos</h1>
+
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold">Pedidos</h1>
+          <p className="text-muted-foreground text-sm">{orderList.length} pedidos en el sistema</p>
+        </div>
+
+        {/* Filtros */}
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {statuses.map((s) => (
+          {statuses.map(s => (
             <button
               key={s}
               onClick={() => setFilter(s)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                filter === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                filter === s
+                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/30'
+                  : 'bg-secondary text-muted-foreground hover:text-foreground'
               }`}
             >
-              {s === 'all' ? 'Todos' : s}
+              {statusLabels[s]}
             </button>
           ))}
         </div>
+
+        {/* Tabla */}
         <CardHover className="p-5">
           <table className="w-full text-sm">
             <thead>
@@ -43,24 +78,28 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && (
+              {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-muted-foreground">No hay pedidos aún</td>
+                  <td colSpan={6} className="py-10 text-center text-muted-foreground">
+                    No hay pedidos aún
+                  </td>
                 </tr>
+              ) : (
+                filtered.map((o: any) => (
+                  <tr key={o.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                    <td className="py-3 text-xs font-mono">#{String(o.id).padStart(8, '0')}</td>
+                    <td className="py-3">{o.client?.name ?? o.user?.name ?? '—'}</td>
+                    <td className="py-3 text-muted-foreground">{o.store?.business_name ?? o.store?.name ?? '—'}</td>
+                    <td className="py-3">{o.items?.length ?? 0}</td>
+                    <td className="py-3 font-semibold">${o.total?.toLocaleString() ?? 0}</td>
+                    <td className="py-3"><StatusBadge status={o.status} /></td>
+                  </tr>
+                ))
               )}
-              {filtered.map((o: any) => (
-                <tr key={o.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                  <td className="py-3 text-xs font-mono">{o.id}</td>
-                  <td className="py-3">{o.user?.name || o.client_name || 'Sin nombre'}</td>
-                  <td className="py-3 text-muted-foreground">{o.store?.name || o.store_name || 'Sin tienda'}</td>
-                  <td className="py-3">{o.items?.length || o.quantity || 0}</td>
-                  <td className="py-3 font-semibold">${o.total?.toLocaleString() || 0}</td>
-                  <td className="py-3"><StatusBadge status={o.status} /></td>
-                </tr>
-              ))}
             </tbody>
           </table>
         </CardHover>
+
       </PageTransition>
     </AdminLayout>
   );

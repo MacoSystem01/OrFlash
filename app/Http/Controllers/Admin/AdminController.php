@@ -5,132 +5,152 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Store;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class AdminController extends Controller
 {
-    /**
-     * Dashboard - Inicio admin
-     */
     public function dashboard()
     {
-        // Datos simulados hasta que los modelos Order y Driver estén disponibles
-        $orders = [
-            [
-                'id' => 1,
-                'user' => ['name' => 'Juan Pérez', 'email' => 'juan@example.com'],
-                'store' => ['name' => 'Tienda Central'],
-                'total' => 45000,
-                'quantity' => 3,
-                'status' => 'delivered',
-                'created_at' => now()->subHours(2)->format('Y-m-d H:i'),
-            ],
-            [
-                'id' => 2,
-                'user' => ['name' => 'María García', 'email' => 'maria@example.com'],
-                'store' => ['name' => 'Farmacia Salud'],
-                'total' => 32000,
-                'quantity' => 2,
-                'status' => 'in_transit',
-                'created_at' => now()->subHours(4)->format('Y-m-d H:i'),
-            ],
-        ];
+        $totalUsers   = User::whereIn('role', ['client', 'store', 'driver'])->count();
+        $totalStores  = Store::count();
+        $activeStores = Store::where('status', 'active')->count();
+        $totalDrivers = User::where('role', 'driver')->count();
 
         return Inertia::render('admin/dashboard', [
-            'orders' => $orders,
+            'stats' => [
+                'total_users'   => $totalUsers,
+                'total_stores'  => $totalStores,
+                'active_stores' => $activeStores,
+                'total_drivers' => $totalDrivers,
+            ],
+            'orders' => [],
         ]);
     }
 
-    /**
-     * Ordenes - Lista completa
-     */
     public function orders()
     {
-        // Datos simulados
-        $orders = [
-            [
-                'id' => 1,
-                'user' => ['name' => 'Juan Pérez', 'email' => 'juan@example.com'],
-                'store' => ['name' => 'Tienda Central'],
-                'total' => 45000,
-                'quantity' => 3,
-                'items' => [],
-                'status' => 'delivered',
-                'created_at' => now()->subHours(2)->format('Y-m-d H:i'),
-            ],
-            [
-                'id' => 2,
-                'user' => ['name' => 'María García', 'email' => 'maria@example.com'],
-                'store' => ['name' => 'Farmacia Salud'],
-                'total' => 32000,
-                'quantity' => 2,
-                'items' => [],
-                'status' => 'in_transit',
-                'created_at' => now()->subHours(4)->format('Y-m-d H:i'),
-            ],
-            [
-                'id' => 3,
-                'user' => ['name' => 'Carlos López', 'email' => 'carlos@example.com'],
-                'store' => ['name' => 'Pan y Café'],
-                'total' => 28000,
-                'quantity' => 4,
-                'items' => [],
-                'status' => 'pending',
-                'created_at' => now()->subHours(6)->format('Y-m-d H:i'),
-            ],
-        ];
-
         return Inertia::render('admin/orders', [
-            'orders' => $orders,
+            'orders' => [],
         ]);
     }
 
-    /**
-     * Usuarios
-     */
     public function users()
     {
-        $users = User::where('role', 'client')
+        $users = User::whereIn('role', ['client', 'store', 'driver'])
             ->latest()
-            ->get();
+            ->get(['id', 'name', 'email', 'role', 'phone', 'status', 'created_at']);
 
         return Inertia::render('admin/users', [
             'users' => $users,
         ]);
     }
 
-    /**
-     * Tiendas
-     */
+    public function userDetail(int $id)
+    {
+        $user = User::findOrFail($id);
+
+        $profile = match ($user->role) {
+            'client' => $user->clientProfile,
+            'driver' => $user->driverProfile,
+            'store'  => $user->merchantProfile,
+            default  => null,
+        };
+
+        return response()->json([
+            'user'    => $user->only([
+                'id',
+                'name',
+                'email',
+                'role',
+                'phone',
+                'status',
+                'cedula',
+                'address',
+                'created_at',
+                'nit',
+                'business_name',
+                'commercial_address',
+                'chamber_of_commerce',
+                'license_number',
+                'vehicle_plate',
+                'arl',
+                'insurance',
+            ]),
+            'profile' => $profile,
+        ]);
+    }
+
+    public function toggleUser(int $id)
+    {
+        $user = User::findOrFail($id);
+
+        if ($user->role === 'admin') {
+            return back()->withErrors(['toggle' => 'No puedes modificar una cuenta admin.']);
+        }
+
+        $user->status = $user->status === 'active' ? 'rejected' : 'active';
+        $user->save();
+
+        return back();
+    }
+
     public function stores()
     {
-        $stores = Store::latest()->get();
+        $stores = Store::with('user:id,name,email')
+            ->latest()
+            ->get();
 
         return Inertia::render('admin/stores', [
             'stores' => $stores,
         ]);
     }
 
-    /**
-     * Repartidores
-     */
+    public function toggleStore(int $id)
+    {
+        $store = Store::findOrFail($id);
+
+        $store->status = match ($store->status) {
+            'active'  => 'inactive',
+            'inactive' => 'active',
+            'pending' => 'active',   // Aprobar tienda pendiente
+            default   => 'inactive',
+        };
+
+        $store->save();
+
+        return back();
+    }
+
     public function drivers()
     {
-        return Inertia::render('admin/drivers');
+        $drivers = User::where('role', 'driver')
+            ->latest()
+            ->get(['id', 'name', 'email', 'phone', 'status', 'created_at']);
+
+        return Inertia::render('admin/drivers', [
+            'drivers' => $drivers,
+        ]);
     }
 
-    /**
-     * Analítica
-     */
     public function analytics()
     {
-        return Inertia::render('admin/analytics');
+        $stats = [
+            'total_users'   => User::whereIn('role', ['client', 'store', 'driver'])->count(),
+            'active_users'  => User::whereIn('role', ['client', 'store', 'driver'])->where('status', 'active')->count(),
+            'total_stores'  => Store::count(),
+            'active_stores' => Store::where('status', 'active')->count(),
+            'by_role' => [
+                'clients' => User::where('role', 'client')->count(),
+                'stores'  => User::where('role', 'store')->count(),
+                'drivers' => User::where('role', 'driver')->count(),
+            ],
+        ];
+
+        return Inertia::render('admin/analytics', [
+            'stats' => $stats,
+        ]);
     }
 
-    /**
-     * Configuración
-     */
     public function settings()
     {
         return Inertia::render('admin/settings');

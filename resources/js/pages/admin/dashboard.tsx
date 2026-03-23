@@ -1,90 +1,64 @@
 import { PageTransition, StaggerList, StaggerItem } from '@/components/shared/Animations';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { usePage, router } from '@inertiajs/react';
-import { DollarSign, ShoppingBag, Users, Truck, TrendingUp, ArrowUpRight, Activity } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { DollarSign, ShoppingBag, Users, Truck, TrendingUp, ArrowUpRight, Store } from 'lucide-react';
 import AdminLayout from '@/layouts/AdminLayout';
-import AdminMap from '@/components/map/AdminMap';
 
-const chartData = [
-  { name: 'Lun', ingresos: 850000 },
-  { name: 'Mar', ingresos: 720000 },
-  { name: 'Mié', ingresos: 1100000 },
-  { name: 'Jue', ingresos: 960000 },
-  { name: 'Vie', ingresos: 1340000 },
-  { name: 'Sáb', ingresos: 1640000 },
-  { name: 'Dom', ingresos: 1460000 },
-];
+interface DashboardStats {
+  total_users: number;
+  total_stores: number;
+  active_stores: number;
+  total_drivers: number;
+}
 
-const formatCurrency = (v: number) => `$${(v / 1000).toFixed(0)}k`;
+interface Order {
+  id: number;
+  user?: { name: string };
+  store?: { name: string };
+  total: number;
+  status: string;
+  created_at: string;
+}
 
-const metrics = [
-  {
-    label: 'Ingresos totales', value: '$0',
-    icon: DollarSign, change: '+12.5%',
-    gradient: 'from-violet-600 to-purple-700',
-    shadow: 'shadow-violet-500/40',
-  },
-  {
-    label: 'Pedidos hoy', value: '0',
-    icon: ShoppingBag, change: '+8.2%',
-    gradient: 'from-blue-500 to-cyan-600',
-    shadow: 'shadow-blue-500/40',
-  },
-  {
-    label: 'Usuarios activos', value: '4',
-    icon: Users, change: '+3.1%',
-    gradient: 'from-emerald-500 to-teal-600',
-    shadow: 'shadow-emerald-500/40',
-  },
-  {
-    label: 'Domiciliarios online', value: '1',
-    icon: Truck, change: '+1',
-    gradient: 'from-orange-500 to-amber-500',
-    shadow: 'shadow-orange-500/40',
-  },
-];
-
-const summary = [
-  { label: 'Pedidos pendientes', value: '0', dot: 'bg-amber-400' },
-  { label: 'En camino',          value: '0', dot: 'bg-blue-400'  },
-  { label: 'Entregados hoy',     value: '0', dot: 'bg-emerald-400'},
-  { label: 'Cancelados hoy',     value: '0', dot: 'bg-red-400'   },
-];
-
-// Tiendas para el mapa
-const mapStores = [
-  { id: '1', name: 'Tienda Central',   category: 'Abarrotes', rating: 4.8, deliveryFee: 2500, isOpen: true,  lat: 3.4516, lng: -76.532 },
-  { id: '2', name: 'Farmacia Salud',   category: 'Farmacia',  rating: 4.5, deliveryFee: 2000, isOpen: true,  lat: 3.4372, lng: -76.5225 },
-  { id: '3', name: 'Pan y Café',       category: 'Panadería', rating: 4.2, deliveryFee: 1500, isOpen: false, lat: 3.4600, lng: -76.5450 },
-  { id: '4', name: 'Carnes del Sur',   category: 'Carnicería',rating: 4.6, deliveryFee: 3000, isOpen: true,  lat: 3.4280, lng: -76.5100 },
-  { id: '5', name: 'Verduras Frescas', category: 'Verdulería',rating: 4.3, deliveryFee: 2000, isOpen: true,  lat: 3.4450, lng: -76.5300 },
-];
-
-// Repartidores para el mapa
-const mapDrivers = [
-  { id: '1', name: 'Carlos López', lat: 3.4516, lng: -76.532,  status: 'available' as const, vehicleType: 'Moto',      rating: 4.7 },
-  { id: '2', name: 'María García', lat: 3.4372, lng: -76.5225, status: 'busy'      as const, vehicleType: 'Bicicleta', rating: 4.5 },
-  { id: '3', name: 'Juan Pérez',   lat: 3.4600, lng: -76.5450, status: 'available' as const, vehicleType: 'Moto',      rating: 4.9 },
-];
-
-// Rutas de pedidos activos
-const mapRoutes = [
-  [
-    { lat: 3.4516, lng: -76.532, label: 'Tienda Central' },
-    { lat: 3.4400, lng: -76.5300, label: 'En camino' },
-    { lat: 3.4300, lng: -76.5200, label: 'Destino' },
-  ],
-  [
-    { lat: 3.4372, lng: -76.5225, label: 'Farmacia Salud' },
-    { lat: 3.4350, lng: -76.5150, label: 'En camino' },
-    { lat: 3.4280, lng: -76.5280, label: 'Destino' },
-  ],
-];
+interface PageProps {
+  stats: DashboardStats;
+  orders: Order[];
+  [key: string]: unknown;
+}
 
 export default function AdminDashboard() {
-  const { orders = [] } = usePage().props as any;
-  const recentOrders = Array.isArray(orders) ? orders.slice(0, 6) : [];
+  const { stats, orders = [] } = usePage<PageProps>().props;
+
+  const metrics = [
+    {
+      label: 'Usuarios totales',
+      value: stats?.total_users ?? 0,
+      icon: Users,
+      gradient: 'from-violet-600 to-purple-700',
+      shadow: 'shadow-violet-500/40',
+    },
+    {
+      label: 'Pedidos hoy',
+      value: orders.length,
+      icon: ShoppingBag,
+      gradient: 'from-blue-500 to-cyan-600',
+      shadow: 'shadow-blue-500/40',
+    },
+    {
+      label: 'Tiendas activas',
+      value: stats?.active_stores ?? 0,
+      icon: Store,
+      gradient: 'from-emerald-500 to-teal-600',
+      shadow: 'shadow-emerald-500/40',
+    },
+    {
+      label: 'Domiciliarios',
+      value: stats?.total_drivers ?? 0,
+      icon: Truck,
+      gradient: 'from-orange-500 to-amber-500',
+      shadow: 'shadow-orange-500/40',
+    },
+  ];
 
   return (
     <AdminLayout>
@@ -102,15 +76,6 @@ export default function AdminDashboard() {
           </span>
         </div>
 
-        {/* Mapa en tiempo real */}
-        <AdminMap 
-          stores={mapStores} 
-          drivers={mapDrivers} 
-          routes={mapRoutes}
-          centerLat={3.4400}
-          centerLng={-76.5280}
-        />
-
         {/* Métricas */}
         <StaggerList className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {metrics.map((m) => (
@@ -120,9 +85,7 @@ export default function AdminDashboard() {
                   <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
                     <m.icon className="w-5 h-5 text-white" />
                   </div>
-                  <span className="flex items-center gap-1 text-xs font-semibold bg-white/20 px-2 py-1 rounded-full backdrop-blur-sm">
-                    <TrendingUp className="w-3 h-3" /> {m.change}
-                  </span>
+                  <TrendingUp className="w-4 h-4 text-white/60" />
                 </div>
                 <p className="text-3xl font-bold">{m.value}</p>
                 <p className="text-sm text-white/75 mt-1">{m.label}</p>
@@ -131,58 +94,6 @@ export default function AdminDashboard() {
           ))}
         </StaggerList>
 
-        {/* Gráficos */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-          {/* Área chart */}
-          <div className="lg:col-span-2 rounded-2xl border border-border bg-card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-semibold">Ingresos semanales</h3>
-                <p className="text-xs text-muted-foreground">Últimos 7 días</p>
-              </div>
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-violet-600 text-white shadow-lg shadow-violet-500/40">
-                <Activity className="w-3 h-3" /> +18.2%
-              </span>
-            </div>
-            <div className="h-52 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#7c3aed" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={formatCurrency} />
-                  <Tooltip
-                    contentStyle={{ background: '#1e1b4b', border: 'none', borderRadius: 12, fontSize: 12, color: '#fff' }}
-                    formatter={(v: any) => [`$${Number(v).toLocaleString()}`, 'Ingresos']}
-                  />
-                  <Area type="monotone" dataKey="ingresos" stroke="#7c3aed" strokeWidth={3} fill="url(#colorIngresos)" dot={{ fill: '#7c3aed', r: 4 }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Resumen */}
-          <div className="rounded-2xl border border-border bg-card p-5 flex flex-col justify-between">
-            <h3 className="font-semibold mb-4">Resumen rápido</h3>
-            <div className="space-y-3 flex-1">
-              {summary.map((item) => (
-                <div key={item.label} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${item.dot}`} />
-                    <span className="text-sm">{item.label}</span>
-                  </div>
-                  <span className="text-lg font-bold">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
         {/* Pedidos recientes */}
         <div className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-center justify-between mb-4">
@@ -190,7 +101,7 @@ export default function AdminDashboard() {
               <h3 className="font-semibold">Pedidos recientes</h3>
               <p className="text-xs text-muted-foreground">Últimas transacciones del sistema</p>
             </div>
-            <button 
+            <button
               onClick={() => router.visit('/admin/orders')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700 transition-colors shadow-lg shadow-violet-500/30"
             >
@@ -209,7 +120,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.length === 0 && (
+                {orders.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-10 text-center text-muted-foreground text-sm">
                       <div className="flex flex-col items-center gap-2">
@@ -221,16 +132,16 @@ export default function AdminDashboard() {
                       </div>
                     </td>
                   </tr>
+                ) : (
+                  orders.slice(0, 6).map((o) => (
+                    <tr key={o.id} className="border-t border-border/50 hover:bg-secondary/30 transition-colors">
+                      <td className="py-3 text-xs font-mono">{o.id}</td>
+                      <td className="py-3">{o.user?.name ?? '—'}</td>
+                      <td className="py-3 text-muted-foreground">{o.store?.name ?? '—'}</td>
+                      <td className="py-3 font-semibold">${o.total?.toLocaleString() ?? 0}</td>
+                      <td className="py-3"><StatusBadge status={o.status as any} /></td>                    </tr>
+                  ))
                 )}
-                {recentOrders.map((o: any) => (
-                  <tr key={o.id} className="border-t border-border/50 hover:bg-secondary/30 transition-colors">
-                    <td className="py-3 text-xs font-mono">{o.id}</td>
-                    <td className="py-3">{o.user?.name || o.client_name || 'Sin nombre'}</td>
-                    <td className="py-3 text-muted-foreground">{o.store?.name || o.store_name || 'Sin tienda'}</td>
-                    <td className="py-3 font-semibold">${o.total?.toLocaleString() || 0}</td>
-                    <td className="py-3"><StatusBadge status={o.status} /></td>
-                  </tr>
-                ))}
               </tbody>
             </table>
           </div>
