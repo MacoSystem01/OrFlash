@@ -284,6 +284,28 @@ class OrderController extends Controller
     }
 
     /**
+     * Página de estado del negocio
+     */
+    public function businessStatusPage(int $storeId)
+    {
+        $store = Store::where('user_id', Auth::id())
+            ->findOrFail($storeId);
+
+        $todayOrders = Order::forStore($storeId)
+            ->whereDate('created_at', today())
+            ->count();
+
+        $stores = Store::where('user_id', Auth::id())
+            ->get(['id', 'business_name']);
+
+        return Inertia::render('store/business-status', [
+            'store'       => $store,
+            'stores'      => $stores,
+            'todayOrders' => $todayOrders,
+        ]);
+    }
+
+    /**
      * Toggle estado abierto/cerrado de la tienda
      */
     public function toggleStoreStatus(int $storeId)

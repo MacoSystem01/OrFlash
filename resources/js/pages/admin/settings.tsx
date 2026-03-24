@@ -2,6 +2,7 @@ import { PageTransition } from '@/components/shared/Animations';
 import { Globe, DollarSign, Clock, Bell, Shield, Check, AlertCircle } from 'lucide-react';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -101,9 +102,25 @@ const sections = [
 
 // ─── Página ───────────────────────────────────────────────────────────────────
 
+interface PageProps {
+  settings?: Partial<SettingsState>;
+  flash?: { success?: string };
+  [key: string]: unknown;
+}
+
 export default function AdminSettings() {
-  const [settings, setSettings] = useState<SettingsState>(defaults);
-  const [saved,    setSaved]    = useState(false);
+  const { settings: saved_settings, flash } = usePage<PageProps>().props;
+
+  // Merge server settings over defaults
+  const initial: SettingsState = {
+    general:       { ...defaults.general,       ...(saved_settings?.general       ?? {}) },
+    finances:      { ...defaults.finances,      ...(saved_settings?.finances      ?? {}) },
+    regional:      { ...defaults.regional,      ...(saved_settings?.regional      ?? {}) },
+    notifications: { ...defaults.notifications, ...(saved_settings?.notifications ?? {}) },
+  };
+
+  const [settings, setSettings] = useState<SettingsState>(initial);
+  const [saved,    setSaved]    = useState(!!flash?.success);
   const [error,    setError]    = useState('');
   const [saving,   setSaving]   = useState(false);
 
@@ -131,13 +148,15 @@ export default function AdminSettings() {
     }
 
     setSaving(true);
-    // Cuando el modelo SystemSetting esté disponible conectar aquí:
-    // router.post('/admin/settings', settings, { onSuccess: () => { setSaved(true); setSaving(false); } });
-    setTimeout(() => {
-      setSaved(true);
-      setSaving(false);
-      setTimeout(() => setSaved(false), 3000);
-    }, 400);
+    router.patch('/admin/settings', settings as any, {
+      preserveScroll: true,
+      onSuccess: () => { setSaved(true); setSaving(false); setTimeout(() => setSaved(false), 3000); },
+      onError:   (errs) => {
+        const first = Object.values(errs)[0] as string | undefined;
+        setError(first ?? 'Error al guardar la configuración.');
+        setSaving(false);
+      },
+    });
   };
 
   const renderField = (sectionId: keyof SettingsState, field: { key: string; label: string; type: string; placeholder?: string; options?: string[] }) => {

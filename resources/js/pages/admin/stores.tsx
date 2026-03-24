@@ -15,6 +15,7 @@ interface Store {
   rating: number;
   status: 'active' | 'inactive' | 'pending';
   is_open: boolean;
+  images: string[] | null;
   user?: { name: string; email: string };
 }
 
@@ -35,7 +36,7 @@ function Toast({ message, type, onDone }: { message: string; type: ToastType; on
   }, [message]);
 
   return (
-    <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-medium
+    <div className={`fixed bottom-6 right-6 z-100 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-medium
       animate-in slide-in-from-bottom-4 fade-in duration-300
       ${type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}
     >
@@ -218,12 +219,23 @@ export default function AdminStores() {
                     isPending ? 'border-yellow-500/40' : 'border-border'
                   }`}>
 
-                    {/* Banner */}
-                    <div className={`h-14 bg-linear-to-r ${gradients[i % gradients.length]} relative`}>
-                      <div
-                        className="absolute inset-0 opacity-20"
-                        style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '16px 16px' }}
-                      />
+                    {/* Banner con imagen real */}
+                    <div className="h-20 relative overflow-hidden">
+                      {store.images?.[0] ? (
+                        <img
+                          src={`/storage/${store.images[0]}`}
+                          alt={store.business_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className={`w-full h-full bg-linear-to-r ${gradients[i % gradients.length]}`}>
+                          <div
+                            className="absolute inset-0 opacity-20"
+                            style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '16px 16px' }}
+                          />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
                       <span className={`absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${st.cls}`}>
                         {st.label}
                       </span>

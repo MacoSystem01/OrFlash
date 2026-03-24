@@ -20,6 +20,7 @@ interface StoreItem {
   delivery_fee?: number;
   is_open: boolean;
   zone: string;
+  images: string[] | null;
   lat?: number;
   lng?: number;
 }
@@ -178,17 +179,19 @@ export default function ClientHome() {
               <StaggerItem key={store.id}>
                 <Link href={`/client/store/${store.id}`}>
                   <div className="rounded-2xl border border-border bg-card overflow-hidden hover:shadow-lg transition-all cursor-pointer">
-                    <div className={`h-20 bg-linear-to-r ${gradients[i % gradients.length]} relative flex items-center justify-center`}>
-                      <div
-                        className="absolute inset-0 opacity-20"
-                        style={{
-                          backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)',
-                          backgroundSize: '16px 16px',
-                        }}
-                      />
-                      <span className="text-4xl relative z-10">
-                        {categoryEmoji[store.category] ?? '🛍️'}
-                      </span>
+                    <div className="relative h-36 overflow-hidden">
+                      {store.images?.[0] ? (
+                        <img
+                          src={`/storage/${store.images[0]}`}
+                          alt={store.business_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className={`w-full h-full bg-linear-to-br ${gradients[i % gradients.length]} flex items-center justify-center`}>
+                          <span className="text-4xl">{categoryEmoji[store.category] ?? '🛍️'}</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent" />
                       <span className={`absolute top-3 right-3 px-2 py-0.5 rounded-full text-xs font-semibold ${
                         store.is_open
                           ? 'bg-emerald-500 text-white'
@@ -196,6 +199,9 @@ export default function ClientHome() {
                       }`}>
                         {store.is_open ? 'Abierta' : 'Cerrada'}
                       </span>
+                      <p className="absolute bottom-2 left-3 text-white text-xs font-medium">
+                        {store.zone}
+                      </p>
                     </div>
                     <div className="p-4">
                       <h3 className="font-semibold">{store.business_name}</h3>

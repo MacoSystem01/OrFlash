@@ -31,7 +31,7 @@ interface PageProps {
   [key: string]: unknown;
 }
 
-const DELIVERY_FEE = 3000;
+const DELIVERY_FEE = 2500;
 
 const paymentLabels: Record<string, string> = {
   cash:       'Efectivo contra entrega',
@@ -70,11 +70,15 @@ export default function ClientCheckout() {
     try {
       const storeId = items[0].product.storeId;
 
+      const xsrfToken = decodeURIComponent(
+        document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''
+      );
+
       const res = await fetch('/client/orders', {
         method:  'POST',
         headers: {
           'Content-Type':     'application/json',
-          'X-CSRF-TOKEN':     (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+          'X-XSRF-TOKEN':     xsrfToken,
           'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({

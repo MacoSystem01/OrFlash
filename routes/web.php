@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Auth;
 |--------------------------------------------------------------------------
 */
 
-Route::inertia('/', 'public/home')->name('home');
+Route::get('/',           [App\Http\Controllers\Public\PublicController::class, 'home'])->name('home');
+Route::get('/stores/{id}', [App\Http\Controllers\Public\PublicController::class, 'storeDetail'])->name('public.store-detail');
 
 /*
 |--------------------------------------------------------------------------
@@ -47,7 +48,24 @@ Route::middleware(['auth', 'verified', 'role:admin'])
             Route::patch('stores/{id}/toggle', 'toggleStore')->name('stores.toggle');
             Route::get('drivers',              'drivers')->name('drivers');
             Route::get('analytics',            'analytics')->name('analytics');
+
+            // Settings
             Route::get('settings',             'settings')->name('settings');
+            Route::patch('settings',           'updateSettings')->name('settings.update');
+
+            // Carousel
+            Route::get('carousels',              'carousels')->name('carousels');
+            Route::post('carousels',             'storeCarousel')->name('carousels.store');
+            Route::post('carousels/{id}',        'updateCarousel')->name('carousels.update');
+            Route::delete('carousels/{id}',      'destroyCarousel')->name('carousels.destroy');
+            Route::patch('carousels/{id}/toggle','toggleCarousel')->name('carousels.toggle');
+
+            // Footer Items
+            Route::get('footer-items',               'footerItems')->name('footer-items');
+            Route::post('footer-items',              'storeFooterItem')->name('footer-items.store');
+            Route::post('footer-items/{id}',         'updateFooterItem')->name('footer-items.update');
+            Route::delete('footer-items/{id}',       'destroyFooterItem')->name('footer-items.destroy');
+            Route::patch('footer-items/{id}/toggle', 'toggleFooterItem')->name('footer-items.toggle');
         });
 
         // Pedidos
@@ -74,8 +92,8 @@ Route::middleware(['auth', 'verified', 'role:client'])
         // Carrito — solo vista
         Route::inertia('cart', 'client/cart')->name('cart');
 
-        // Checkout — solo vista
-        Route::inertia('checkout', 'client/checkout')->name('checkout');
+        // Checkout — con datos del perfil
+        Route::get('checkout', [App\Http\Controllers\Client\ClientProfileController::class, 'checkout'])->name('checkout');
 
         // Tienda detalle con productos reales
         Route::get('store/{id}', [App\Http\Controllers\Order\OrderController::class, 'storeDetail'])->name('store-detail');
@@ -87,7 +105,12 @@ Route::middleware(['auth', 'verified', 'role:client'])
 
         // Pagos Wompi
         Route::get('payments/generate/{orderId}', [App\Http\Controllers\Payment\PaymentController::class, 'generatePayment'])->name('payments.generate');
+        Route::get('payments/return/{orderId}',   [App\Http\Controllers\Payment\PaymentController::class, 'paymentReturn'])->name('payments.return');
         Route::get('payments/status/{orderId}',   [App\Http\Controllers\Payment\PaymentController::class, 'checkStatus'])->name('payments.status');
+
+        // Reseñas
+        Route::post('stores/{storeId}/reviews',  [App\Http\Controllers\Client\ReviewController::class, 'rateStore'])->name('stores.review');
+        Route::post('drivers/{driverId}/reviews', [App\Http\Controllers\Client\ReviewController::class, 'rateDriver'])->name('drivers.review');
 
         // Perfil
         Route::controller(App\Http\Controllers\Client\ClientProfileController::class)
@@ -113,11 +136,13 @@ Route::middleware(['auth', 'verified', 'role:store'])
     ->name('store.')
     ->group(function () {
 
-        // Index y creación de tienda
+        // Index, creación y configuración de tienda
         Route::controller(App\Http\Controllers\Store\StoreController::class)->group(function () {
-            Route::get('/',  'index')->name('index');
-            Route::post('/', 'store')->name('store');
-            Route::get('{storeId}/profile', 'profile')->name('profile');
+            Route::get('/',                    'index')->name('index');
+            Route::post('/',                   'store')->name('store');
+            Route::get('{storeId}/profile',    'profile')->name('profile');
+            Route::match(['patch','post'], '{storeId}/info', 'updateInfo')->name('info.update');
+            Route::patch('{storeId}/hours',    'updateHours')->name('hours.update');
         });
 
         // Dashboard y pedidos — OrderController
@@ -157,8 +182,9 @@ Route::middleware(['auth', 'verified', 'role:driver'])
     ->name('driver.')
     ->group(function () {
 
-        Route::inertia('dashboard', 'driver/dashboard')->name('dashboard');
-        Route::inertia('profile',   'driver/profile')->name('profile');
+        Route::get('dashboard',    [App\Http\Controllers\Driver\DriverController::class, 'dashboard'])->name('dashboard');
+        Route::get('profile',      [App\Http\Controllers\Driver\DriverController::class, 'profile'])->name('profile');
+        Route::patch('profile',    [App\Http\Controllers\Driver\DriverController::class, 'updateProfile'])->name('profile.update');
 
         // Pedidos — OrderController
         Route::get('available-orders',      [App\Http\Controllers\Order\OrderController::class, 'availableOrders'])->name('available-orders');
@@ -186,8 +212,8 @@ Route::post('api/payments/webhook', [App\Http\Controllers\Payment\PaymentControl
 | AUTH
 |--------------------------------------------------------------------------
 */
-Route::post('/login',    [App\Http\Controllers\Auth\LoginController::class,    'store'])->middleware('guest')->name('login.custom');
-Route::post('/register', [App\Http\Controllers\Auth\RegisterController::class, 'store'])->middleware('guest')->name('register.custom');
+Route::post('/login',    [App\Http\Controllers\Auth\LoginController::class,    'store'])->middleware(['guest', 'throttle:5,1'])->name('login.custom');
+Route::post('/register', [App\Http\Controllers\Auth\RegisterController::class, 'store'])->middleware(['guest', 'throttle:10,5'])->name('register.custom');
 Route::post('/logout',   [App\Http\Controllers\Auth\LogoutController::class,   'store'])->middleware('auth')->name('logout');
 
 Route::inertia('/pending-approval', 'auth/pending-approval')->name('pending');

@@ -35,6 +35,27 @@ class ClientProfileController extends Controller
 
     /*
     |--------------------------------------------------------------------------
+    | Checkout — pasa perfil y métodos de pago al frontend
+    |--------------------------------------------------------------------------
+    */
+    public function checkout()
+    {
+        $profile        = ClientProfile::where('user_id', Auth::id())->first();
+        $paymentMethods = ClientPaymentMethod::where('user_id', Auth::id())->get();
+
+        return Inertia::render('client/checkout', [
+            'profile' => $profile ? [
+                'address'      => $profile->address,
+                'neighborhood' => $profile->neighborhood,
+                'city'         => $profile->city,
+                'references'   => $profile->references,
+            ] : null,
+            'paymentMethods' => $paymentMethods,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Perfil del cliente
     |--------------------------------------------------------------------------
     */

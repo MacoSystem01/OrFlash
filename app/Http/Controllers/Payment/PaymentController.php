@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
@@ -37,9 +38,58 @@ class PaymentController extends Controller
             'amount_in_cents'  => $amountCents,
             'reference'        => $reference,
             'signature'        => $signature,
-            'redirect_url'     => config('app.url') . '/client/orders',
+            'redirect_url'     => config('app.url') . '/client/payments/return/' . $order->id,
             'order_id'         => $order->id,
         ]);
+    }
+
+    // ─── Retorno desde Wompi — verificar con la API y confirmar pago ─────────
+
+    public function paymentReturn(Request $request, int $orderId)
+    {
+        $order = Order::where('client_id', Auth::id())->findOrFail($orderId);
+
+        // Si ya fue procesado (por webhook o intento anterior) ir directo a pedidos
+        if ($order->payment_status === 'approved') {
+            return redirect('/client/orders')->with('success', '¡Pago confirmado!');
+        }
+
+        // Wompi agrega ?id=<transactionId> en la URL de retorno
+        $transactionId = $request->query('id');
+
+        if ($transactionId) {
+            $baseUrl = str_contains(config('services.wompi.public_key', ''), 'stagtest')
+                ? 'https://sandbox.wompi.co/v1'
+                : 'https://production.wompi.co/v1';
+
+            $response = Http::withToken(config('services.wompi.private_key'))
+                ->get("{$baseUrl}/transactions/{$transactionId}");
+
+            if ($response->successful()) {
+                $tx     = $response->json('data');
+                $status = $tx['status'] ?? null;
+
+                DB::beginTransaction();
+                try {
+                    match ($status) {
+                        'APPROVED' => $this->handleApproved(
+                            $order,
+                            $tx['id'],
+                            $tx['payment_method_type'] ?? null
+                        ),
+                        'DECLINED' => $this->handleDeclined($order),
+                        'VOIDED'   => $this->handleVoided($order),
+                        default    => null,
+                    };
+                    DB::commit();
+                } catch (\Throwable $e) {
+                    DB::rollBack();
+                    Log::error('paymentReturn error: ' . $e->getMessage(), ['order_id' => $orderId]);
+                }
+            }
+        }
+
+        return redirect('/client/orders');
     }
 
     // ─── Webhook de Wompi — confirmación de pago ──────────────────────────────

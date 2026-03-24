@@ -10,16 +10,16 @@ import {
 type Role = 'client' | 'store' | 'driver' | null;
 
 const roles = [
-  { id: 'client', label: 'Cliente', emoji: '🛒', desc: 'Quiero hacer pedidos a domicilio', gradient: 'from-blue-500 to-cyan-600', shadow: 'shadow-blue-500/30' },
-  { id: 'store', label: 'Comercio', emoji: '🏪', desc: 'Quiero vender mis productos', gradient: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/30' },
-  { id: 'driver', label: 'Domiciliario', emoji: '🛵', desc: 'Quiero realizar entregas y ganar', gradient: 'from-orange-500 to-amber-500', shadow: 'shadow-orange-500/30' },
+  { id: 'client', label: 'Cliente',       emoji: '🛒', desc: 'Quiero hacer pedidos a domicilio', gradient: 'from-blue-500 to-cyan-600',     shadow: 'shadow-blue-500/30'    },
+  { id: 'store',  label: 'Comercio',      emoji: '🏪', desc: 'Quiero vender mis productos',       gradient: 'from-emerald-500 to-teal-600',  shadow: 'shadow-emerald-500/30' },
+  { id: 'driver', label: 'Domiciliario',  emoji: '🛵', desc: 'Quiero realizar entregas y ganar',  gradient: 'from-orange-500 to-amber-500',  shadow: 'shadow-orange-500/30'  },
 ];
 
 const vehicleTypes = [
-  { id: 'moto', label: 'Moto', emoji: '🛵' },
+  { id: 'moto',      label: 'Moto',      emoji: '🛵' },
   { id: 'bicicleta', label: 'Bicicleta', emoji: '🚲' },
-  { id: 'carro', label: 'Carro', emoji: '🚗' },
-  { id: 'a_pie', label: 'A pie', emoji: '🚶' },
+  { id: 'carro',     label: 'Carro',     emoji: '🚗' },
+  { id: 'a_pie',     label: 'A pie',     emoji: '🚶' },
 ];
 
 // ─── Componentes FUERA del componente principal ───────────────────────────────
@@ -92,19 +92,19 @@ export default function Register() {
   const [role, setRole] = useState<Role>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState(false);
-  const [docPhotoPreview, setDocPhotoPreview] = useState('');
-  const [selfiePreview, setSelfiePreview] = useState('');
-  const [profilePhotoPreview, setProfilePhotoPreview] = useState('');
+  const [docPhotoPreview,      setDocPhotoPreview]      = useState('');
+  const [selfiePreview,        setSelfiePreview]        = useState('');
+  const [profilePhotoPreview,  setProfilePhotoPreview]  = useState('');
   const [vehiclePhotoPreviews, setVehiclePhotoPreviews] = useState<string[]>([]);
 
-  const docPhotoRef = useRef<HTMLInputElement>(null);
-  const selfieRef = useRef<HTMLInputElement>(null);
-  const profilePhotoRef = useRef<HTMLInputElement>(null);
+  const docPhotoRef      = useRef<HTMLInputElement>(null);
+  const selfieRef        = useRef<HTMLInputElement>(null);
+  const profilePhotoRef  = useRef<HTMLInputElement>(null);
   const vehiclePhotosRef = useRef<HTMLInputElement>(null);
-  const soatRef = useRef<HTMLInputElement>(null);
-  const licenseRef = useRef<HTMLInputElement>(null);
-  const chamberRef = useRef<HTMLInputElement>(null);
-  const rutRef = useRef<HTMLInputElement>(null);
+  const soatRef          = useRef<HTMLInputElement>(null);
+  const licenseRef       = useRef<HTMLInputElement>(null);
+  const chamberRef       = useRef<HTMLInputElement>(null);
+  const rutRef           = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     name: '', email: '', password: '', password_confirmation: '', phone: '',
@@ -115,6 +115,7 @@ export default function Register() {
     merchant_type: 'natural', business_name: '', document_or_nit: '', legal_representative: '',
   });
 
+  // ─── CRÍTICO: useCallback con deps vacías → u es estable ───────────────────
   const u = useCallback((field: string, value: any) =>
     setForm(p => ({ ...p, [field]: value })), []);
 
@@ -138,30 +139,35 @@ export default function Register() {
     const data = new FormData();
     Object.entries(form).forEach(([k, v]) => data.append(k, String(v)));
     data.append('role', role!);
-    if (docPhotoRef.current?.files?.[0]) data.append('document_photo', docPhotoRef.current.files[0]);
-    if (selfieRef.current?.files?.[0]) data.append('selfie_photo', selfieRef.current.files[0]);
-    if (profilePhotoRef.current?.files?.[0]) data.append('profile_photo', profilePhotoRef.current.files[0]);
-    if (soatRef.current?.files?.[0]) data.append('soat', soatRef.current.files[0]);
-    if (licenseRef.current?.files?.[0]) data.append('license', licenseRef.current.files[0]);
-    if (chamberRef.current?.files?.[0]) data.append('chamber_of_commerce', chamberRef.current.files[0]);
-    if (rutRef.current?.files?.[0]) data.append('rut', rutRef.current.files[0]);
+    if (docPhotoRef.current?.files?.[0])      data.append('document_photo',       docPhotoRef.current.files[0]);
+    if (selfieRef.current?.files?.[0])        data.append('selfie_photo',          selfieRef.current.files[0]);
+    if (profilePhotoRef.current?.files?.[0])  data.append('profile_photo',         profilePhotoRef.current.files[0]);
+    if (soatRef.current?.files?.[0])          data.append('soat',                  soatRef.current.files[0]);
+    if (licenseRef.current?.files?.[0])       data.append('license',               licenseRef.current.files[0]);
+    if (chamberRef.current?.files?.[0])       data.append('chamber_of_commerce',   chamberRef.current.files[0]);
+    if (rutRef.current?.files?.[0])           data.append('rut',                   rutRef.current.files[0]);
     if (vehiclePhotosRef.current?.files)
       Array.from(vehiclePhotosRef.current.files).forEach(f => data.append('vehicle_photos[]', f));
 
     router.post('/register', data, {
-      onError: errs => { setErrors(errs); setProcessing(false); },
+      onError:   errs => { setErrors(errs); setProcessing(false); },
       onSuccess: () => setProcessing(false),
     });
   };
 
-  const F = (props: Omit<Parameters<typeof Field>[0], 'value' | 'onChange' | 'error'>) => (
-    <Field
-      {...props}
-      value={form[props.field as keyof typeof form] as string}
-      onChange={u}
-      error={errors[props.field]}
-    />
-  );
+  // ─── CORRECCIÓN DEL BUG ────────────────────────────────────────────────────
+  // F se usa como función normal {F({...})} NO como componente <F .../>.
+  // Usar <F .../> hace que React desmonte/monte el input en cada render
+  // porque la referencia de la función cambia en cada render del padre.
+  const F = (props: Omit<Parameters<typeof Field>[0], 'value' | 'onChange' | 'error'>) =>
+    Field({
+      ...props,
+      value:    form[props.field as keyof typeof form] as string,
+      onChange: u,
+      error:    errors[props.field],
+    });
+
+  const needsMotorVehicleDocs = form.vehicle_type === 'moto' || form.vehicle_type === 'carro';
 
   const btnGradient = role === 'client'
     ? 'from-blue-500 to-cyan-600'
@@ -179,11 +185,7 @@ export default function Register() {
         <div className="absolute -bottom-15 -right-15 w-64 h-64 rounded-full bg-white/10" />
         <div className="relative z-10 text-center text-white space-y-6">
           <div className="w-full h-50 rounded-3xl bg-white flex items-center justify-center mx-auto shadow-2xl">
-            <img
-              src="/logo-png.png"
-              alt="Logo"
-              className="w-full h-full object-contain"
-            />
+            <img src="/logo-png.png" alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-4xl font-bold">OrFlash</h1>
@@ -275,19 +277,19 @@ export default function Register() {
                 <>
                   <SectionHeader num="1" title="Datos básicos" gradient="from-blue-500 to-cyan-600" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2"><F label="Nombre completo" field="name" placeholder="Tu nombre completo" icon={User} required /></div>
-                    <F label="Celular" field="phone" placeholder="3001234567" icon={Phone} required />
-                    <F label="Cédula" field="cedula" placeholder="Opcional" icon={CreditCard} optional />
-                    <div className="sm:col-span-2"><F label="Correo electrónico" field="email" type="email" placeholder="correo@ejemplo.com" icon={Mail} required /></div>
-                    <F label="Contraseña" field="password" type="password" placeholder="Mín. 8 caracteres" icon={Lock} required />
-                    <F label="Confirmar contraseña" field="password_confirmation" type="password" placeholder="Repite" icon={Lock} required />
+                    <div className="sm:col-span-2">{F({label: 'Nombre completo', field: 'name', placeholder: 'Tu nombre completo', icon: User, required: true})}</div>
+                    {F({label: 'Celular', field: 'phone', placeholder: '3001234567', icon: Phone, required: true})}
+                    {F({label: 'Cédula',  field: 'cedula', placeholder: 'Opcional', icon: CreditCard, optional: true})}
+                    <div className="sm:col-span-2">{F({label: 'Correo electrónico', field: 'email', type: 'email', placeholder: 'correo@ejemplo.com', icon: Mail, required: true})}</div>
+                    {F({label: 'Contraseña',         field: 'password',              type: 'password', placeholder: 'Mín. 8 caracteres', icon: Lock, required: true})}
+                    {F({label: 'Confirmar contraseña', field: 'password_confirmation', type: 'password', placeholder: 'Repite',             icon: Lock, required: true})}
                   </div>
 
                   <SectionHeader num="2" title="Datos de ubicación" gradient="from-blue-500 to-cyan-600" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2"><F label="Dirección exacta" field="address" placeholder="Calle 45 #12-30" icon={MapPin} required /></div>
-                    <F label="Barrio" field="neighborhood" placeholder="Tu barrio" icon={Home} required />
-                    <F label="Ciudad" field="city" placeholder="Tu ciudad" icon={Building} required />
+                    <div className="sm:col-span-2">{F({label: 'Dirección exacta', field: 'address',      placeholder: 'Calle 45 #12-30', icon: MapPin,   required: true})}</div>
+                    {F({label: 'Barrio',  field: 'neighborhood', placeholder: 'Tu barrio', icon: Home,     required: true})}
+                    {F({label: 'Ciudad',  field: 'city',         placeholder: 'Tu ciudad', icon: Building, required: true})}
                     <div className="sm:col-span-2">
                       <label className="text-sm font-medium flex items-center gap-1 mb-1.5">
                         Referencias <span className="text-xs text-muted-foreground">(opcional)</span>
@@ -296,7 +298,7 @@ export default function Register() {
                         placeholder="Ej: Casa verde, portón negro, torre 2 apto 301" rows={2}
                         className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm outline-none focus:border-violet-500 resize-none" />
                     </div>
-                    <F label="Número alterno" field="alternate_phone" placeholder="Opcional" icon={Phone} optional />
+                    {F({label: 'Número alterno', field: 'alternate_phone', placeholder: 'Opcional', icon: Phone, optional: true})}
                   </div>
 
                   <SectionHeader num="3" title="Foto de perfil" gradient="from-blue-500 to-cyan-600" />
@@ -310,7 +312,7 @@ export default function Register() {
                 <>
                   <SectionHeader num="1" title="Datos personales" gradient="from-orange-500 to-amber-500" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2"><F label="Nombre completo" field="name" placeholder="Tu nombre completo" icon={User} required /></div>
+                    <div className="sm:col-span-2">{F({label: 'Nombre completo', field: 'name', placeholder: 'Tu nombre completo', icon: User, required: true})}</div>
                     <div className="space-y-1.5">
                       <label className="text-sm font-medium">Tipo documento <span className="text-red-500">*</span></label>
                       <select value={form.document_type} onChange={e => u('document_type', e.target.value)}
@@ -320,12 +322,15 @@ export default function Register() {
                         <option value="Pasaporte">Pasaporte</option>
                       </select>
                     </div>
-                    <F label="Número documento" field="document_number" placeholder="Tu número" icon={CreditCard} required />
-                    <F label="Fecha nacimiento" field="birth_date" type="date" placeholder="" icon={Calendar} required />
-                    <F label="Celular" field="phone" placeholder="3001234567" icon={Phone} required />
-                    <div className="sm:col-span-2"><F label="Correo electrónico" field="email" type="email" placeholder="correo@ejemplo.com" icon={Mail} required /></div>
-                    <F label="Contraseña" field="password" type="password" placeholder="Mín. 8 caracteres" icon={Lock} required />
-                    <F label="Confirmar contraseña" field="password_confirmation" type="password" placeholder="Repite" icon={Lock} required />
+                    {F({label: 'Número documento', field: 'document_number', placeholder: 'Tu número', icon: CreditCard, required: true})}
+                    <div className="space-y-1.5">
+                      {F({label: 'Fecha nacimiento', field: 'birth_date', type: 'date', placeholder: '', icon: Calendar, required: true})}
+                      {errors.birth_date && <p className="text-xs text-red-500">{errors.birth_date}</p>}
+                    </div>
+                    {F({label: 'Celular', field: 'phone', placeholder: '3001234567', icon: Phone, required: true})}
+                    <div className="sm:col-span-2">{F({label: 'Correo electrónico', field: 'email', type: 'email', placeholder: 'correo@ejemplo.com', icon: Mail, required: true})}</div>
+                    {F({label: 'Contraseña',          field: 'password',              type: 'password', placeholder: 'Mín. 8 caracteres', icon: Lock, required: true})}
+                    {F({label: 'Confirmar contraseña', field: 'password_confirmation', type: 'password', placeholder: 'Repite',            icon: Lock, required: true})}
                   </div>
 
                   <SectionHeader num="2" title="Fotos de validación" gradient="from-orange-500 to-amber-500" />
@@ -338,13 +343,15 @@ export default function Register() {
 
                   <SectionHeader num="3" title="Datos de residencia" gradient="from-orange-500 to-amber-500" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2"><F label="Dirección" field="address" placeholder="Tu dirección" icon={MapPin} required /></div>
-                    <F label="Barrio" field="neighborhood" placeholder="Tu barrio" icon={Home} required />
-                    <F label="Ciudad" field="city" placeholder="Tu ciudad" icon={Building} required />
+                    <div className="sm:col-span-2">{F({label: 'Dirección', field: 'address', placeholder: 'Tu dirección', icon: MapPin, required: true})}</div>
+                    {F({label: 'Barrio', field: 'neighborhood', placeholder: 'Tu barrio', icon: Home,     required: true})}
+                    {F({label: 'Ciudad', field: 'city',         placeholder: 'Tu ciudad', icon: Building, required: true})}
                   </div>
 
                   <SectionHeader num="4" title="Datos del vehículo" gradient="from-orange-500 to-amber-500" />
                   <div className="space-y-4">
+
+                    {/* Tipo de vehículo */}
                     <div>
                       <label className="text-sm font-medium mb-2 block">Tipo de vehículo <span className="text-red-500">*</span></label>
                       <div className="grid grid-cols-4 gap-2">
@@ -359,50 +366,79 @@ export default function Register() {
                       {errors.vehicle_type && <p className="text-xs text-red-500 mt-1">{errors.vehicle_type}</p>}
                     </div>
 
+                    {/* Campos condicionales para vehículo */}
                     {form.vehicle_type && form.vehicle_type !== 'a_pie' && (
                       <div className="grid grid-cols-2 gap-3">
-                        <F label="Marca" field="vehicle_brand" placeholder="Ej: Honda" icon={Car} />
-                        <F label="Modelo" field="vehicle_model" placeholder="Ej: 2022" icon={Car} />
-                        <F label="Color" field="vehicle_color" placeholder="Ej: Rojo" icon={Car} />
-                        {form.vehicle_type !== 'bicicleta' && <F label="Placa" field="vehicle_plate" placeholder="Ej: ABC123" icon={Car} />}
+                        {F({label: 'Marca', field: 'vehicle_brand', placeholder: 'Ej: Honda', icon: Car})}
+                        {F({label: 'Color', field: 'vehicle_color', placeholder: 'Ej: Rojo', icon: Car})}
+                        {/* Modelo y placa — solo para vehículos motorizados */}
+                        {form.vehicle_type !== 'bicicleta' && F({label: 'Modelo / Año', field: 'vehicle_model', placeholder: 'Ej: 2022', icon: Car})}
+                        {needsMotorVehicleDocs && F({label: 'Placa', field: 'vehicle_plate', placeholder: 'Ej: ABC123', icon: Car})}
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div onClick={() => vehiclePhotosRef.current?.click()}
-                        className="border-2 border-dashed border-border rounded-xl p-3 text-center cursor-pointer hover:border-orange-500 transition-all">
-                        <input ref={vehiclePhotosRef} type="file" accept="image/*" multiple onChange={handleVehiclePhotos} className="hidden" />
-                        <Camera className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
-                        <p className="text-xs text-muted-foreground">Fotos vehículo</p>
-                      </div>
-                      {form.vehicle_type !== 'bicicleta' && form.vehicle_type !== 'a_pie' && (
-                        <>
-                          <FileUpload label="SOAT vigente" preview={soatRef.current?.files?.[0]?.name || ''} inputRef={soatRef} onChange={() => { }} accept=".pdf,.jpg,.jpeg,.png" optional />
-                          <FileUpload label="Licencia conducción" preview={licenseRef.current?.files?.[0]?.name || ''} inputRef={licenseRef} onChange={() => { }} accept=".pdf,.jpg,.jpeg,.png" optional />
-                        </>
-                      )}
-                    </div>
-
-                    {vehiclePhotoPreviews.length > 0 && (
-                      <div className="flex gap-2 flex-wrap">
-                        {vehiclePhotoPreviews.map((src, i) => (
-                          <div key={i} className="relative">
-                            <img src={src} className="w-16 h-16 object-cover rounded-lg border border-border" alt="" />
-                            <button type="button" onClick={() => setVehiclePhotoPreviews(p => p.filter((_, j) => j !== i))}
-                              className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center">
-                              <X className="w-3 h-3" />
-                            </button>
+                    {/* Foto del vehículo (siempre si no es a_pie) */}
+                    {form.vehicle_type && form.vehicle_type !== 'a_pie' && (
+                      <div>
+                        <label className="text-sm font-medium mb-1.5 block">
+                          Foto del vehículo {needsMotorVehicleDocs ? <span className="text-red-500">*</span> : <span className="text-xs text-muted-foreground">(opcional)</span>}
+                        </label>
+                        <div onClick={() => vehiclePhotosRef.current?.click()}
+                          className="border-2 border-dashed border-border rounded-xl p-3 text-center cursor-pointer hover:border-orange-500 transition-all">
+                          <input ref={vehiclePhotosRef} type="file" accept="image/*" multiple onChange={handleVehiclePhotos} className="hidden" />
+                          <Camera className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                          <p className="text-xs text-muted-foreground">Toca para subir fotos</p>
+                        </div>
+                        {vehiclePhotoPreviews.length > 0 && (
+                          <div className="flex gap-2 flex-wrap mt-2">
+                            {vehiclePhotoPreviews.map((src, i) => (
+                              <div key={i} className="relative">
+                                <img src={src} className="w-16 h-16 object-cover rounded-lg border border-border" alt="" />
+                                <button type="button" onClick={() => setVehiclePhotoPreviews(p => p.filter((_, j) => j !== i))}
+                                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
+
+                    {/* SOAT y Licencia — obligatorios para moto/carro */}
+                    {needsMotorVehicleDocs && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <FileUpload
+                            label={<>SOAT vigente <span className="text-red-500">*</span></>}
+                            preview={soatRef.current?.files?.[0]?.name || ''}
+                            inputRef={soatRef}
+                            onChange={() => {}}
+                            accept=".pdf,.jpg,.jpeg,.png"
+                          />
+                          {errors.soat && <p className="text-xs text-red-500 mt-1">{errors.soat}</p>}
+                        </div>
+                        <div>
+                          <FileUpload
+                            label={<>Licencia de conducción <span className="text-red-500">*</span></>}
+                            preview={licenseRef.current?.files?.[0]?.name || ''}
+                            inputRef={licenseRef}
+                            onChange={() => {}}
+                            accept=".pdf,.jpg,.jpeg,.png"
+                          />
+                          {errors.license && <p className="text-xs text-red-500 mt-1">{errors.license}</p>}
+                        </div>
+                      </div>
+                    )}
+
                   </div>
 
+                  {/* Validaciones legales */}
                   <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
                     <p className="text-sm font-semibold">Validaciones legales <span className="text-red-500">*</span></p>
                     {[
-                      { field: 'accepted_terms', label: 'Acepto los términos y condiciones de OrFlash' },
-                      { field: 'accepted_data_policy', label: 'Autorizo el tratamiento de mis datos personales (Ley 1581 de 2012)' },
+                      { field: 'accepted_terms',          label: 'Acepto los términos y condiciones de OrFlash' },
+                      { field: 'accepted_data_policy',    label: 'Autorizo el tratamiento de mis datos personales (Ley 1581 de 2012)' },
                       { field: 'accepted_responsibility', label: 'Acepto la responsabilidad sobre los pedidos asignados' },
                     ].map(item => (
                       <label key={item.field} className="flex items-start gap-3 cursor-pointer">
@@ -436,22 +472,22 @@ export default function Register() {
                   <SectionHeader num="2" title="Datos del merchant" gradient="from-emerald-500 to-teal-600" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
-                      <F label={form.merchant_type === 'empresa' ? 'Razón social' : 'Nombre completo'} field="name" placeholder="Nombre o razón social" icon={User} required />
+                      {F({label: form.merchant_type === 'empresa' ? 'Razón social' : 'Nombre completo', field: 'name', placeholder: 'Nombre o razón social', icon: User, required: true})}
                     </div>
-                    <F label={form.merchant_type === 'empresa' ? 'NIT' : 'Cédula'} field="document_or_nit" placeholder="Ej: 900123456-1" icon={FileText} required />
+                    {F({label: form.merchant_type === 'empresa' ? 'NIT' : 'Cédula', field: 'document_or_nit', placeholder: 'Ej: 900123456-1', icon: FileText, required: true})}
                     {form.merchant_type === 'empresa' && (
-                      <F label="Representante legal" field="legal_representative" placeholder="Nombre del rep." icon={User} />
+                      F({label: 'Representante legal', field: 'legal_representative', placeholder: 'Nombre del rep.', icon: User})
                     )}
-                    <F label="Celular" field="phone" placeholder="3001234567" icon={Phone} required />
-                    <div className="sm:col-span-2"><F label="Correo electrónico" field="email" type="email" placeholder="correo@ejemplo.com" icon={Mail} required /></div>
-                    <F label="Contraseña" field="password" type="password" placeholder="Mín. 8 caracteres" icon={Lock} required />
-                    <F label="Confirmar contraseña" field="password_confirmation" type="password" placeholder="Repite" icon={Lock} required />
+                    {F({label: 'Celular', field: 'phone', placeholder: '3001234567', icon: Phone, required: true})}
+                    <div className="sm:col-span-2">{F({label: 'Correo electrónico', field: 'email', type: 'email', placeholder: 'correo@ejemplo.com', icon: Mail, required: true})}</div>
+                    {F({label: 'Contraseña',          field: 'password',              type: 'password', placeholder: 'Mín. 8 caracteres', icon: Lock, required: true})}
+                    {F({label: 'Confirmar contraseña', field: 'password_confirmation', type: 'password', placeholder: 'Repite',            icon: Lock, required: true})}
                   </div>
 
                   <SectionHeader num="3" title="Documentos legales (opcionales)" gradient="from-emerald-500 to-teal-600" />
                   <div className="grid grid-cols-2 gap-3">
-                    <FileUpload label="Cámara de comercio" preview={chamberRef.current?.files?.[0]?.name || ''} inputRef={chamberRef} onChange={() => { }} accept=".pdf,.jpg,.jpeg,.png" optional />
-                    <FileUpload label="RUT" preview={rutRef.current?.files?.[0]?.name || ''} inputRef={rutRef} onChange={() => { }} accept=".pdf,.jpg,.jpeg,.png" optional />
+                    <FileUpload label="Cámara de comercio" preview={chamberRef.current?.files?.[0]?.name || ''} inputRef={chamberRef} onChange={() => {}} accept=".pdf,.jpg,.jpeg,.png" optional />
+                    <FileUpload label="RUT" preview={rutRef.current?.files?.[0]?.name || ''} inputRef={rutRef} onChange={() => {}} accept=".pdf,.jpg,.jpeg,.png" optional />
                   </div>
 
                   <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-emerald-700">
@@ -462,7 +498,7 @@ export default function Register() {
                   <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
                     <p className="text-sm font-semibold">Validaciones legales <span className="text-red-500">*</span></p>
                     {[
-                      { field: 'accepted_terms', label: 'Acepto el contrato comercial con OrFlash' },
+                      { field: 'accepted_terms',       label: 'Acepto el contrato comercial con OrFlash' },
                       { field: 'accepted_data_policy', label: 'Autorizo el tratamiento de datos personales (Ley 1581 de 2012)' },
                     ].map(item => (
                       <label key={item.field} className="flex items-start gap-3 cursor-pointer">

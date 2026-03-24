@@ -16,7 +16,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               <div className="w-8 h-8 rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
                 <Store className="w-4 h-4 text-white" />
               </div>
-              <span className="font-bold">OrFlash</span>
+              <img src="/logo-png.png" alt="OrFlash" className="h-7 w-auto" />
             </div>
             <button
               onClick={() => router.post('/logout')}

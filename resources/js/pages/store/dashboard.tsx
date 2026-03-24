@@ -2,17 +2,72 @@ import { PageTransition, StaggerList, StaggerItem } from '@/components/shared/An
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Package, DollarSign, Clock, TrendingUp, CheckCircle, Plus } from 'lucide-react';
 import StoreLayout from '@/layouts/StoreLayout';
-import { Link } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { formatPrice } from '@/lib/format';
 
-const metrics = [
-  { label: 'Pedidos activos', value: '0',  icon: Package,    gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-violet-500/40'  },
-  { label: 'Ingresos hoy',    value: '$0', icon: DollarSign, gradient: 'from-emerald-500 to-teal-600',  shadow: 'shadow-emerald-500/40' },
-  { label: 'Tiempo promedio', value: '—',  icon: Clock,      gradient: 'from-blue-500 to-cyan-600',     shadow: 'shadow-blue-500/40'    },
-  { label: 'Completados',     value: '0',  icon: TrendingUp, gradient: 'from-orange-500 to-amber-500',  shadow: 'shadow-orange-500/40'  },
-];
+interface OrderItem {
+  product_name: string;
+  quantity: number;
+}
+
+interface Order {
+  id: number;
+  status: string;
+  total: number;
+  client?: { name: string };
+  items: OrderItem[];
+}
+
+interface Store {
+  id: number;
+  business_name: string;
+  is_open: boolean;
+  opening_time: string;
+  closing_time: string;
+}
+
+interface PageProps {
+  store: Store;
+  stores: Store[];
+  activeOrders: Order[];
+  todayRevenue: number;
+  todayDelivered: number;
+  [key: string]: unknown;
+}
 
 export default function StoreDashboard() {
-  const activeOrders: any[] = [];
+  const { store, activeOrders = [], todayRevenue = 0, todayDelivered = 0 } = usePage<PageProps>().props;
+
+  const metrics = [
+    {
+      label: 'Pedidos activos',
+      value: activeOrders.length,
+      icon: Package,
+      gradient: 'from-violet-500 to-purple-600',
+      shadow: 'shadow-violet-500/40',
+    },
+    {
+      label: 'Ingresos hoy',
+      value: formatPrice(todayRevenue),
+      icon: DollarSign,
+      gradient: 'from-emerald-500 to-teal-600',
+      shadow: 'shadow-emerald-500/40',
+    },
+    {
+      label: 'Horario',
+      value: store ? `${store.opening_time} - ${store.closing_time}` : '—',
+      icon: Clock,
+      gradient: 'from-blue-500 to-cyan-600',
+      shadow: 'shadow-blue-500/40',
+    },
+    {
+      label: 'Completados hoy',
+      value: todayDelivered,
+      icon: TrendingUp,
+      gradient: 'from-orange-500 to-amber-500',
+      shadow: 'shadow-orange-500/40',
+    },
+  ];
 
   return (
     <StoreLayout>
@@ -25,13 +80,18 @@ export default function StoreDashboard() {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href="/store/create"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:opacity-90 transition-opacity"
+              href="/store"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 hover:opacity-90 transition-opacity"
             >
               <Plus className="w-4 h-4" /> Crear tienda
             </Link>
-            <span className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold bg-emerald-500 text-white shadow-lg shadow-emerald-500/40">
-              <span className="w-2 h-2 rounded-full bg-white animate-pulse" /> Abierta
+            <span className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold shadow-lg ${
+              store?.is_open
+                ? 'bg-emerald-500 text-white shadow-emerald-500/40'
+                : 'bg-slate-500 text-white shadow-slate-500/40'
+            }`}>
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              {store?.is_open ? 'Abierta' : 'Cerrada'}
             </span>
           </div>
         </div>
@@ -40,7 +100,7 @@ export default function StoreDashboard() {
         <StaggerList className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           {metrics.map((m) => (
             <StaggerItem key={m.label}>
-              <div className={`rounded-2xl p-5 bg-gradient-to-br ${m.gradient} text-white shadow-xl ${m.shadow}`}>
+              <div className={`rounded-2xl p-5 bg-linear-to-br ${m.gradient} text-white shadow-xl ${m.shadow}`}>
                 <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center mb-3">
                   <m.icon className="w-4 h-4 text-white" />
                 </div>
@@ -63,17 +123,19 @@ export default function StoreDashboard() {
             </div>
           ) : (
             <div className="space-y-3">
-              {activeOrders.map((order: any) => (
+              {activeOrders.map((order) => (
                 <div key={order.id} className="rounded-xl border-l-4 border-violet-500 bg-violet-500/5 p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-mono text-muted-foreground">{order.id}</span>
-                    <StatusBadge status={order.status} />
+                    <span className="text-xs font-mono text-muted-foreground">
+                      #{String(order.id).padStart(8, '0')}
+                    </span>
+                    <StatusBadge status={order.status as any} />
                   </div>
-                  <p className="font-semibold text-sm">{order.clientName}</p>
+                  <p className="font-semibold text-sm">{order.client?.name ?? '—'}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {order.items?.map((i: any) => `${i.name} x${i.quantity}`).join(', ')}
+                    {order.items?.map(i => `${i.product_name} x${i.quantity}`).join(', ')}
                   </p>
-                  <p className="text-sm font-bold text-violet-600 mt-2">${order.total?.toLocaleString()}</p>
+                  <p className="text-sm font-bold text-violet-600 mt-2">{formatPrice(order.total)}</p>
                 </div>
               ))}
             </div>

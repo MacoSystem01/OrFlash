@@ -46,7 +46,7 @@ function Toast({ message, type, onDone }: { message: string; type: ToastType; on
   }, [message]);
 
   return (
-    <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-medium
+    <div className={`fixed bottom-6 right-6 z-100 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-medium
       animate-in slide-in-from-bottom-4 fade-in duration-300
       ${type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}
     >
@@ -76,15 +76,22 @@ function ProductModal({
     name:         product?.name         ?? '',
     description:  product?.description  ?? '',
     category:     product?.category     ?? '',
-    price:        product?.price        ? String(product.price) : '',
-    stock:        product?.stock        ? String(product.stock) : '',
+    price:        product?.price        != null ? String(product.price) : '',
+    stock:        product?.stock        != null ? String(product.stock) : '',
     is_available: product?.is_available ?? true,
   });
 
   const [processing, setProcessing] = useState(false);
   const [errors,     setErrors]     = useState<Record<string, string>>({});
   const imageRef = useRef<HTMLInputElement>(null);
-  const [previews, setPreviews] = useState<string[]>([]);
+  // For edits, seed previews with existing images from storage
+  const [previews, setPreviews] = useState<string[]>(
+    product?.images?.map(img => `/storage/${img}`) ?? []
+  );
+  // Track which existing image paths to keep (those not removed by user)
+  const [keptImages, setKeptImages] = useState<string[]>(
+    product?.images ?? []
+  );
 
   const u = (field: string, value: unknown) =>
     setForm(p => ({ ...p, [field]: value }));
@@ -97,13 +104,27 @@ function ProductModal({
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
     setProcessing(true);
 
     const data = new FormData();
-    Object.entries(form).forEach(([k, v]) => data.append(k, String(v)));
-    if (imageRef.current?.files) {
+    data.append('name',         form.name);
+    data.append('description',  form.description);
+    data.append('category',     form.category);
+    data.append('price',        form.price);
+    data.append('stock',        form.stock === '' ? '0' : form.stock);
+    // Laravel boolean rule sólo acepta '1' y '0', no 'true'/'false'
+    data.append('is_available', form.is_available ? '1' : '0');
+
+    // When editing, pass which existing image paths to retain
+    if (isEdit) {
+      keptImages.forEach(p => data.append('keep_images[]', p));
+    }
+
+    // Only append newly-selected files (those with blob: URLs)
+    const newFilePreviews = previews.filter(p => !p.startsWith('/storage/'));
+    if (imageRef.current?.files && newFilePreviews.length > 0) {
       Array.from(imageRef.current.files).forEach(f => data.append('images[]', f));
     }
 
@@ -254,7 +275,15 @@ function ProductModal({
                     <img src={src} className="w-16 h-16 object-cover rounded-xl border border-border" alt="" />
                     <button
                       type="button"
-                      onClick={() => setPreviews(p => p.filter((_, j) => j !== i))}
+                      onClick={() => {
+                        const removed = previews[i];
+                        setPreviews(p => p.filter((_, j) => j !== i));
+                        // If it was a storage image, remove from kept list
+                        if (removed.startsWith('/storage/')) {
+                          const path = removed.replace('/storage/', '');
+                          setKeptImages(k => k.filter(k => k !== path));
+                        }
+                      }}
                       className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center"
                     >
                       <X className="w-3 h-3" />

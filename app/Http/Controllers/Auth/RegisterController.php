@@ -9,6 +9,7 @@ use App\Models\MerchantProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller {
 
@@ -19,7 +20,7 @@ class RegisterController extends Controller {
         $rules = [
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users',
-            'password' => 'required|min:8|confirmed',
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'role'     => 'required|in:client,store,driver',
             'phone'    => 'required|string|max:20',
         ];
@@ -29,13 +30,15 @@ class RegisterController extends Controller {
             $rules['address']       = 'required|string';
             $rules['neighborhood']  = 'required|string';
             $rules['city']          = 'required|string';
+            $rules['profile_photo'] = 'nullable|file|mimes:jpg,jpeg,png,webp|max:3072';
         }
 
         // Validación domiciliario
         if ($role === 'driver') {
             $rules['document_type']   = 'required|in:CC,CE,Pasaporte';
             $rules['document_number'] = 'required|string';
-            $rules['birth_date']      = 'required|date';
+            // Debe ser mayor de 18 años
+            $rules['birth_date']      = 'required|date|before_or_equal:' . now()->subYears(18)->format('Y-m-d');
             $rules['address']         = 'required|string';
             $rules['neighborhood']    = 'required|string';
             $rules['city']            = 'required|string';
@@ -43,19 +46,34 @@ class RegisterController extends Controller {
             $rules['accepted_terms']          = 'accepted';
             $rules['accepted_data_policy']    = 'accepted';
             $rules['accepted_responsibility'] = 'accepted';
-            $rules['document_photo'] = 'nullable|image|max:5120';
-            $rules['selfie_photo']   = 'nullable|image|max:5120';
+            $rules['document_photo'] = 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120';
+            $rules['selfie_photo']   = 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120';
+
+            // SOAT y licencia obligatorios para moto y carro
+            if (in_array($request->vehicle_type, ['moto', 'carro'])) {
+                $rules['soat']    = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
+                $rules['license'] = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
+            }
         }
 
         // Validación merchant (tienda)
         if ($role === 'store') {
-            $rules['merchant_type']    = 'required|in:natural,empresa';
-            $rules['document_or_nit']  = 'required|string';
+            $rules['merchant_type']       = 'required|in:natural,empresa';
+            $rules['document_or_nit']     = 'required|string';
             $rules['accepted_terms']       = 'accepted';
             $rules['accepted_data_policy'] = 'accepted';
+            $rules['chamber_of_commerce'] = 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120';
+            $rules['rut']                 = 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120';
         }
 
-        $request->validate($rules);
+        $request->validate($rules, [
+            'birth_date.before_or_equal' => 'Debes tener al menos 18 años para registrarte.',
+            'soat.required'              => 'El SOAT es obligatorio para moto y carro.',
+            'license.required'           => 'La licencia de conducción es obligatoria para moto y carro.',
+            'password.min'               => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.mixed'             => 'La contraseña debe contener mayúsculas y minúsculas.',
+            'password.numbers'           => 'La contraseña debe contener al menos un número.',
+        ]);
 
         // Crear usuario
         $user = User::create([

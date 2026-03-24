@@ -1,6 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Home, Package, ShoppingCart, User, LogOut } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const { auth } = usePage().props as any;
@@ -17,7 +16,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-30 h-14 border-b border-border bg-background/80 backdrop-blur-xl flex items-center justify-between px-4">
-        <h1 className="font-bold text-lg">OrFlash</h1>
+        <img src="/logo-png.png" alt="OrFlash" className="h-8 w-auto" />
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{user?.name}</span>
           <button onClick={() => router.post('/logout')} className="text-muted-foreground hover:text-destructive transition-colors">

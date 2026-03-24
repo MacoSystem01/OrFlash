@@ -85,9 +85,10 @@ class ProductController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('ProductController@store: ' . $e->getMessage());
 
             return back()->withErrors([
-                'error' => 'Error al crear el producto: ' . $e->getMessage(),
+                'error' => 'Error al crear el producto. Inténtalo de nuevo.',
             ]);
         }
     }
@@ -102,27 +103,34 @@ class ProductController extends Controller
             ->findOrFail($productId);
 
         $validated = $request->validate([
-            'name'         => 'required|string|max:255',
-            'description'  => 'nullable|string|max:1000',
-            'category'     => 'required|string|max:100',
-            'price'        => 'required|integer|min:100',
-            'stock'        => 'required|integer|min:0',
-            'is_available' => 'boolean',
-            'images.*'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
+            'name'           => 'required|string|max:255',
+            'description'    => 'nullable|string|max:1000',
+            'category'       => 'required|string|max:100',
+            'price'          => 'required|integer|min:100',
+            'stock'          => 'required|integer|min:0',
+            'is_available'   => 'boolean',
+            'images.*'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
+            'keep_images'    => 'nullable|array',
+            'keep_images.*'  => 'string',
         ]);
 
         DB::beginTransaction();
 
         try {
-            $imagePaths = $product->images ?? [];
+            $existing   = $product->images ?? [];
+            $keepPaths  = $validated['keep_images'] ?? [];
+
+            // Delete images that were removed by the user
+            foreach ($existing as $path) {
+                if (!in_array($path, $keepPaths)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
+            // Start with kept images, append any newly uploaded ones
+            $imagePaths = $keepPaths;
 
             if ($request->hasFile('images')) {
-                // Eliminar imágenes anteriores
-                foreach ($imagePaths as $oldPath) {
-                    Storage::disk('public')->delete($oldPath);
-                }
-                $imagePaths = [];
-
                 foreach ($request->file('images') as $image) {
                     $imagePaths[] = $image->store('products', 'public');
                 }
@@ -144,9 +152,10 @@ class ProductController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('ProductController@update: ' . $e->getMessage());
 
             return back()->withErrors([
-                'error' => 'Error al actualizar el producto: ' . $e->getMessage(),
+                'error' => 'Error al actualizar el producto. Inténtalo de nuevo.',
             ]);
         }
     }

@@ -13,12 +13,9 @@ const gradients = [
 ]
 
 export default function StoreIndex() {
-  const { stores, auth } = usePage().props as any
+  const { stores, auth, totalOrders = 0, totalRevenue = 0 } = usePage().props as any
 
   const [open, setOpen] = useState(false)
-
-  const totalRevenue = 0
-  const totalOrders = 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,7 +25,7 @@ export default function StoreIndex() {
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+            <div className="w-8 h-8 rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
               <Store className="w-4 h-4 text-white" />
             </div>
             <div>
@@ -45,7 +42,7 @@ export default function StoreIndex() {
             {/* BOTÓN MODAL */}
             <button
               onClick={() => setOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30"
             >
               <Plus className="w-4 h-4" /> Nueva tienda
             </button>
@@ -68,7 +65,7 @@ export default function StoreIndex() {
         <PageTransition className="space-y-8">
 
           {/* Bienvenida */}
-          <div className="rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 p-6 text-white shadow-xl shadow-emerald-500/30 relative overflow-hidden">
+          <div className="rounded-2xl bg-linear-to-br from-emerald-600 to-teal-700 p-6 text-white shadow-xl shadow-emerald-500/30 relative overflow-hidden">
             
             <div
               className="absolute inset-0 opacity-10"
@@ -140,7 +137,7 @@ export default function StoreIndex() {
 
               <button
                 onClick={() => setOpen(true)}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/30"
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/30"
               >
                 <Plus className="w-5 h-5" /> Crear mi primera tienda
               </button>
@@ -164,7 +161,7 @@ export default function StoreIndex() {
                       <div className="rounded-2xl border border-border bg-card overflow-hidden hover:shadow-xl transition-all cursor-pointer group">
 
                         {/* Banner */}
-                        <div className={`h-20 bg-gradient-to-r ${gradients[i % gradients.length]} relative flex items-center justify-center`}>
+                        <div className={`h-20 bg-linear-to-r ${gradients[i % gradients.length]} relative flex items-center justify-center`}>
                           
                           <div
                             className="absolute inset-0 opacity-20"
@@ -237,7 +234,7 @@ export default function StoreIndex() {
                 {/* AGREGAR TIENDA */}
                 <StaggerItem>
                   <button onClick={() => setOpen(true)} className="w-full">
-                    <div className="rounded-2xl border-2 border-dashed border-border bg-card hover:border-emerald-500 hover:bg-emerald-500/5 transition-all cursor-pointer h-full min-h-[200px] flex flex-col items-center justify-center gap-3 p-6 group">
+                    <div className="rounded-2xl border-2 border-dashed border-border bg-card hover:border-emerald-500 hover:bg-emerald-500/5 transition-all cursor-pointer h-full min-h-50 flex flex-col items-center justify-center gap-3 p-6 group">
                       <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 group-hover:bg-emerald-500/20 flex items-center justify-center transition-colors">
                         <Plus className="w-6 h-6 text-emerald-500" />
                       </div>
