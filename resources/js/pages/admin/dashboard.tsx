@@ -1,8 +1,9 @@
 import { PageTransition, StaggerList, StaggerItem } from '@/components/shared/Animations';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { usePage, router } from '@inertiajs/react';
-import { DollarSign, ShoppingBag, Users, Truck, TrendingUp, ArrowUpRight, Store } from 'lucide-react';
+import { ShoppingBag, Users, Truck, TrendingUp, ArrowUpRight, Store } from 'lucide-react';
 import AdminLayout from '@/layouts/AdminLayout';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 
 interface DashboardStats {
   total_users: number;
@@ -13,8 +14,8 @@ interface DashboardStats {
 
 interface Order {
   id: number;
-  user?: { name: string };
-  store?: { name: string };
+  client?: { name: string };
+  store?: { business_name: string };
   total: number;
   status: string;
   created_at: string;
@@ -27,6 +28,7 @@ interface PageProps {
 }
 
 export default function AdminDashboard() {
+  useAutoRefresh();
   const { stats, orders = [] } = usePage<PageProps>().props;
 
   const metrics = [
@@ -112,6 +114,7 @@ export default function AdminDashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left">
+                  <th className="pb-3 font-medium text-muted-foreground">Fecha</th>
                   <th className="pb-3 font-medium text-muted-foreground">ID</th>
                   <th className="pb-3 font-medium text-muted-foreground">Cliente</th>
                   <th className="pb-3 font-medium text-muted-foreground">Tienda</th>
@@ -122,7 +125,7 @@ export default function AdminDashboard() {
               <tbody>
                 {orders.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-10 text-center text-muted-foreground text-sm">
+                    <td colSpan={6} className="py-10 text-center text-muted-foreground text-sm">
                       <div className="flex flex-col items-center gap-2">
                         <div className="w-12 h-12 rounded-2xl bg-violet-500/10 flex items-center justify-center">
                           <ShoppingBag className="w-6 h-6 text-violet-500" />
@@ -135,11 +138,13 @@ export default function AdminDashboard() {
                 ) : (
                   orders.slice(0, 6).map((o) => (
                     <tr key={o.id} className="border-t border-border/50 hover:bg-secondary/30 transition-colors">
+                      <td className="py-3 text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString('es-CO')}</td>
                       <td className="py-3 text-xs font-mono">{o.id}</td>
-                      <td className="py-3">{o.user?.name ?? '—'}</td>
-                      <td className="py-3 text-muted-foreground">{o.store?.name ?? '—'}</td>
+                      <td className="py-3">{o.client?.name ?? '—'}</td>
+                      <td className="py-3 text-muted-foreground">{o.store?.business_name ?? '—'}</td>
                       <td className="py-3 font-semibold">${o.total?.toLocaleString() ?? 0}</td>
-                      <td className="py-3"><StatusBadge status={o.status as any} /></td>                    </tr>
+                      <td className="py-3"><StatusBadge status={o.status as any} /></td>
+                    </tr>
                   ))
                 )}
               </tbody>

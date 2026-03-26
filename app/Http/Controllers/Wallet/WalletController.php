@@ -165,7 +165,7 @@ class WalletController extends Controller
             ]);
 
             return back()->withErrors([
-                'error' => 'Error al procesar el retiro: ' . $e->getMessage(),
+                'error' => 'No se pudo procesar el retiro. Por favor, inténtalo de nuevo más tarde.',
             ]);
         }
     }

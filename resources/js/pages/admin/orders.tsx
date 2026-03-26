@@ -3,6 +3,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminLayout from '@/layouts/AdminLayout';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,7 @@ const statusLabels: Record<FilterType, string> = {
 // ─── Página ───────────────────────────────────────────────────────────────────
 
 export default function AdminOrders() {
+  useAutoRefresh();
   const { orders } = usePage().props as any;
   const [filter, setFilter] = useState<FilterType>('all');
 

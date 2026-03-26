@@ -131,9 +131,33 @@ class StoreController extends Controller
     */
     public function dashboard($storeId)
     {
+        $store = $this->getStore($storeId);
+
+        $activeOrders = Order::forStore($storeId)
+            ->whereIn('status', ['pending', 'confirmed', 'preparing', 'ready'])
+            ->with([
+                'client:id,name',
+                'items:id,order_id,product_name,quantity',
+            ])
+            ->latest()
+            ->get(['id', 'store_id', 'client_id', 'status', 'payment_method', 'payment_status', 'total', 'created_at']);
+
+        $todayRevenue = Order::forStore($storeId)
+            ->where('status', 'delivered')
+            ->whereDate('delivered_at', today())
+            ->sum('store_earnings');
+
+        $todayDelivered = Order::forStore($storeId)
+            ->where('status', 'delivered')
+            ->whereDate('delivered_at', today())
+            ->count();
+
         return Inertia::render('store/dashboard', [
-            'store' => $this->getStore($storeId),
-            'stores' => $this->getStoresList(),
+            'store'          => $store,
+            'stores'         => $this->getStoresList(),
+            'activeOrders'   => $activeOrders,
+            'todayRevenue'   => $todayRevenue,
+            'todayDelivered' => $todayDelivered,
         ]);
     }
 
@@ -193,6 +217,25 @@ class StoreController extends Controller
 
     /*
     |--------------------------------------------------------------------------
+    | Actualizar métodos de pago de la tienda
+    |--------------------------------------------------------------------------
+    */
+    public function updatePaymentMethods(Request $request, int $storeId)
+    {
+        $store = $this->getStore($storeId);
+
+        $validated = $request->validate([
+            'payment_methods'   => 'nullable|array',
+            'payment_methods.*' => 'string|in:cash,contra_entrega,nequi,pse,daviplata',
+        ]);
+
+        $store->update(['payment_methods' => $validated['payment_methods'] ?? []]);
+
+        return back()->with('success', 'Métodos de pago actualizados correctamente.');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Actualizar información del negocio
     |--------------------------------------------------------------------------
     */
@@ -204,6 +247,8 @@ class StoreController extends Controller
             'business_name' => 'sometimes|required|string|max:255',
             'description'   => 'nullable|string|max:1000',
             'address'       => 'sometimes|required|string|max:255',
+            'neighborhood'  => 'nullable|string|max:100',
+            'city'          => 'nullable|string|max:100',
             'phone'         => 'nullable|string|max:20',
             'category'      => 'sometimes|required|string|max:100',
             'zone'          => 'sometimes|required|string|max:100',

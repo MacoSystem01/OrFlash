@@ -8,58 +8,39 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('wallet_transactions', function (Blueprint $table) {
+        Schema::create('wallets', function (Blueprint $table) {
             $table->id();
 
-            // Relación con el wallet
-            $table->foreignId('wallet_id')
+            // Dueño del wallet
+            $table->foreignId('user_id')
                 ->constrained()
                 ->cascadeOnDelete();
 
-            // Relación opcional con el pedido que generó la transacción
-            $table->foreignId('order_id')
-                ->nullable()
-                ->constrained()
-                ->nullOnDelete();
+            // Tipo de wallet: tienda o domiciliario
+            $table->enum('type', ['store', 'driver'])->index();
 
-            // Tipo de movimiento
-            $table->enum('type', [
-                'credit',       // ingreso — pedido entregado
-                'debit',        // egreso — retiro a Nequi
-                'pending',      // en espera — pedido en curso
-                'released',     // liberado — pedido entregado, pasa de pending a credit
-                'reversed',     // reversión — pedido cancelado
-            ])->index();
+            // Saldos en pesos colombianos (COP)
+            $table->unsignedBigInteger('balance')->default(0);
+            $table->unsignedBigInteger('pending_balance')->default(0);
+            $table->unsignedBigInteger('total_earned')->default(0);
+            $table->unsignedBigInteger('total_withdrawn')->default(0);
 
-            // Monto en pesos colombianos
-            $table->unsignedInteger('amount');
-
-            // Saldo del wallet después de esta transacción
-            $table->unsignedInteger('balance_after');
-
-            // Descripción legible para el usuario
-            $table->string('description');
-
-            // Referencia externa (ej: referencia de transferencia Nequi)
-            $table->string('reference')->nullable()->index();
-
-            // Estado de la transacción
-            $table->enum('status', [
-                'completed',
-                'pending',
-                'failed',
-            ])->default('completed')->index();
+            // Método de pago preferido para retiros
+            $table->string('nequi_phone')->nullable();
+            $table->string('bank_name')->nullable();
+            $table->string('bank_account')->nullable();
+            $table->string('bank_account_type')->nullable();
 
             $table->timestamps();
 
-            // Índices para consultas frecuentes
-            $table->index(['wallet_id', 'type']);
-            $table->index(['wallet_id', 'created_at']);
+            // Un usuario sólo puede tener un wallet por tipo
+            $table->unique(['user_id', 'type']);
+            $table->index(['type', 'balance']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('wallet_transactions');
+        Schema::dropIfExists('wallets');
     }
 };

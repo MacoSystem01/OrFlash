@@ -1,8 +1,9 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Home, Package, ShoppingCart, User, LogOut } from 'lucide-react';
+import ClientSetupModal from '@/components/client/ClientSetupModal';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { auth } = usePage().props as any;
+  const { auth, needsSetup } = usePage().props as any;
   const user = auth?.user;
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
@@ -39,6 +40,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           ))}
         </div>
       </nav>
+
+      {/* Modal de configuración inicial — se muestra si falta la dirección */}
+      {needsSetup && <ClientSetupModal />}
     </div>
   );
 }

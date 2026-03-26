@@ -186,6 +186,37 @@ class Order extends Model
         return true;
     }
 
+    // ─── Tarifa de domicilio por distancia ────────────────────────────────────
+
+    /**
+     * Calcula la tarifa de domicilio según distancia.
+     * Si la tienda tiene tarifa fija configurada, la usa directamente.
+     * Zonas: 0-500m=$1500, 0.5-1km=$2500, 1-1.5km=$3500, 1.5-2km=$4500, >2km=no disponible
+     */
+    public static function calculateDistanceFee(float $distanceM, ?int $storeCustomFee): array
+    {
+        if ($storeCustomFee !== null) {
+            return ['fee' => $storeCustomFee, 'zone' => 'custom', 'available' => true];
+        }
+        if ($distanceM <= 500)  return ['fee' => 1500, 'zone' => 'cercana', 'available' => true];
+        if ($distanceM <= 1000) return ['fee' => 2500, 'zone' => 'media',   'available' => true];
+        if ($distanceM <= 1500) return ['fee' => 3500, 'zone' => 'lejana',  'available' => true];
+        if ($distanceM <= 2000) return ['fee' => 4500, 'zone' => 'maxima',  'available' => true];
+        return                         ['fee' => 0,    'zone' => 'fuera',   'available' => false];
+    }
+
+    // ─── Distancia Haversine (metros) ─────────────────────────────────────────
+
+    public static function haversineMeters(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $R    = 6_371_000; // radio de la Tierra en metros
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a    = sin($dLat / 2) ** 2
+              + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+        return $R * 2 * atan2(sqrt($a), sqrt(1 - $a));
+    }
+
     // ─── Calcular comisiones (método estático) ────────────────────────────────
 
     public static function calculateCommissions(int $subtotal, int $deliveryFee): array

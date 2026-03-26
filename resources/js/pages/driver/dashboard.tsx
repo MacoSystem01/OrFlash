@@ -3,6 +3,7 @@ import { Power, DollarSign, Package, Clock, MapPin, Navigation } from 'lucide-re
 import { useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import DriverLayout from '@/layouts/DriverLayout';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ interface PageProps {
 // ─── Página ───────────────────────────────────────────────────────────────────
 
 export default function DriverDashboard() {
+  useAutoRefresh();
   const { driverStats } = usePage<PageProps>().props;
   const [isOnline, setIsOnline] = useState(false);
 

@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { LayoutDashboard, Package, ShoppingBag, Clock, ToggleLeft, User, Store, ChevronDown, Plus, LogOut } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Clock, ToggleLeft, User, Store, ChevronDown, Plus, LogOut, FileText } from 'lucide-react';
 import { useState } from 'react';
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
@@ -38,6 +38,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     { label: 'Productos', path: `/store/${storeId}/products`,         icon: <ShoppingBag className="w-4 h-4" />    },
     { label: 'Pedidos',   path: `/store/${storeId}/orders`,           icon: <Package className="w-4 h-4" />        },
     { label: 'Historial', path: `/store/${storeId}/history`,          icon: <Clock className="w-4 h-4" />          },
+    { label: 'Reporte',   path: `/store/${storeId}/report`,           icon: <FileText className="w-4 h-4" />       },
     { label: 'Estado',    path: `/store/${storeId}/business-status`,  icon: <ToggleLeft className="w-4 h-4" />     },
     { label: 'Perfil',    path: `/store/${storeId}/profile`,          icon: <User className="w-4 h-4" />           },
   ];
@@ -54,8 +55,11 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             onClick={() => setShowStoreMenu(!showStoreMenu)}
             className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary transition-colors"
           >
-            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0">
-              <Store className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 overflow-hidden">
+              {store.images?.[0]
+                ? <img src={`/storage/${store.images[0]}`} alt={store.business_name} className="w-full h-full object-cover" />
+                : <Store className="w-4 h-4 text-white" />
+              }
             </div>
             <div className="flex-1 text-left min-w-0">
               <p className="text-sm font-semibold truncate">{store.business_name}</p>

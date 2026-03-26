@@ -16,47 +16,32 @@ class RegisterController extends Controller {
     public function store(Request $request) {
         $role = $request->role;
 
-        // Validación base
+        // ── Validación base (todos los roles) ────────────────────────────────
         $rules = [
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users',
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'role'     => 'required|in:client,store,driver',
-            'phone'    => 'required|string|max:20',
+            'phone'    => ['required', 'regex:/^(\+57)?[0-9]{10}$/'],
         ];
 
-        // Validación cliente
+        // ── Cliente — solo datos básicos (fase 1) ────────────────────────────
+        // Dirección, barrio, ciudad y foto de perfil se solicitan en el modal
+        // de configuración inicial al primer inicio de sesión.
         if ($role === 'client') {
-            $rules['address']       = 'required|string';
-            $rules['neighborhood']  = 'required|string';
-            $rules['city']          = 'required|string';
-            $rules['profile_photo'] = 'nullable|file|mimes:jpg,jpeg,png,webp|max:3072';
+            $rules['cedula'] = ['nullable', 'regex:/^[0-9]{6,20}$/'];
         }
 
-        // Validación domiciliario
+        // ── Domiciliario — solo datos personales (fase 1) ────────────────────
+        // Fotos, residencia y datos del vehículo se solicitan en el modal
+        // de configuración inicial al llegar a /pending-approval.
         if ($role === 'driver') {
             $rules['document_type']   = 'required|in:CC,CE,Pasaporte';
-            $rules['document_number'] = 'required|string';
-            // Debe ser mayor de 18 años
+            $rules['document_number'] = ['required', 'regex:/^[A-Z0-9]{4,30}$/'];
             $rules['birth_date']      = 'required|date|before_or_equal:' . now()->subYears(18)->format('Y-m-d');
-            $rules['address']         = 'required|string';
-            $rules['neighborhood']    = 'required|string';
-            $rules['city']            = 'required|string';
-            $rules['vehicle_type']    = 'required|in:moto,bicicleta,carro,a_pie';
-            $rules['accepted_terms']          = 'accepted';
-            $rules['accepted_data_policy']    = 'accepted';
-            $rules['accepted_responsibility'] = 'accepted';
-            $rules['document_photo'] = 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120';
-            $rules['selfie_photo']   = 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120';
-
-            // SOAT y licencia obligatorios para moto y carro
-            if (in_array($request->vehicle_type, ['moto', 'carro'])) {
-                $rules['soat']    = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
-                $rules['license'] = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
-            }
         }
 
-        // Validación merchant (tienda)
+        // ── Merchant (tienda) — registro completo ────────────────────────────
         if ($role === 'store') {
             $rules['merchant_type']       = 'required|in:natural,empresa';
             $rules['document_or_nit']     = 'required|string';
@@ -68,14 +53,13 @@ class RegisterController extends Controller {
 
         $request->validate($rules, [
             'birth_date.before_or_equal' => 'Debes tener al menos 18 años para registrarte.',
-            'soat.required'              => 'El SOAT es obligatorio para moto y carro.',
-            'license.required'           => 'La licencia de conducción es obligatoria para moto y carro.',
             'password.min'               => 'La contraseña debe tener al menos 8 caracteres.',
             'password.mixed'             => 'La contraseña debe contener mayúsculas y minúsculas.',
             'password.numbers'           => 'La contraseña debe contener al menos un número.',
+            'phone.regex'                => 'Ingresa un número de celular colombiano válido (10 dígitos).',
         ]);
 
-        // Crear usuario
+        // ── Crear usuario ─────────────────────────────────────────────────────
         $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
@@ -85,54 +69,25 @@ class RegisterController extends Controller {
             'status'   => in_array($role, ['store', 'driver']) ? 'pending' : 'active',
         ]);
 
-        // Crear perfil según rol
+        // ── Crear perfil mínimo según rol ─────────────────────────────────────
         if ($role === 'client') {
             ClientProfile::create([
-                'user_id'         => $user->id,
-                'address'         => $request->address,
-                'neighborhood'    => $request->neighborhood,
-                'city'            => $request->city,
-                'references'      => $request->references,
-                'alternate_phone' => $request->alternate_phone,
-                'cedula'          => $request->cedula,
-                'profile_photo'   => $request->hasFile('profile_photo')
-                    ? $request->file('profile_photo')->store('profiles', 'public')
-                    : null,
+                'user_id' => $user->id,
+                'cedula'  => $request->cedula,
+                // address / neighborhood / city / profile_photo → fase 2 (modal)
             ]);
         }
 
         if ($role === 'driver') {
-            $vehiclePhotos = [];
-            if ($request->hasFile('vehicle_photos')) {
-                foreach ($request->file('vehicle_photos') as $photo) {
-                    $vehiclePhotos[] = $photo->store('drivers/vehicles', 'public');
-                }
-            }
             DriverProfile::create([
                 'user_id'         => $user->id,
                 'document_type'   => $request->document_type,
                 'document_number' => $request->document_number,
-                'document_photo'  => $request->hasFile('document_photo')
-                    ? $request->file('document_photo')->store('drivers/docs', 'public') : null,
-                'selfie_photo'    => $request->hasFile('selfie_photo')
-                    ? $request->file('selfie_photo')->store('drivers/selfies', 'public') : null,
                 'birth_date'      => $request->birth_date,
-                'address'         => $request->address,
-                'neighborhood'    => $request->neighborhood,
-                'city'            => $request->city,
-                'vehicle_type'    => $request->vehicle_type,
-                'vehicle_brand'   => $request->vehicle_brand,
-                'vehicle_model'   => $request->vehicle_model,
-                'vehicle_color'   => $request->vehicle_color,
-                'vehicle_plate'   => $request->vehicle_plate,
-                'vehicle_photos'  => $vehiclePhotos,
-                'soat'            => $request->hasFile('soat')
-                    ? $request->file('soat')->store('drivers/docs', 'public') : null,
-                'license'         => $request->hasFile('license')
-                    ? $request->file('license')->store('drivers/docs', 'public') : null,
-                'accepted_terms'          => true,
-                'accepted_data_policy'    => true,
-                'accepted_responsibility' => true,
+                // photos / address / vehicle → fase 2 (modal en /pending-approval)
+                'accepted_terms'          => false,
+                'accepted_data_policy'    => false,
+                'accepted_responsibility' => false,
             ]);
         }
 

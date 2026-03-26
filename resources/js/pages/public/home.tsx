@@ -1,4 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import GoogleButton from '@/components/shared/GoogleButton';
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -214,27 +215,27 @@ function FooterMosaic({ items }: { items: FooterItem[] }) {
   if (items.length === 0) return null;
 
   return (
-    <section className="border-t border-border bg-secondary/30 py-12">
+    <section className="border-t border-border bg-secondary/30 py-10">
       <div className="max-w-6xl mx-auto px-4">
-        <h2 className="text-center text-xl font-bold mb-8 text-foreground/80">¿Por qué elegir OrFlash?</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
+        <h2 className="text-center text-lg font-bold mb-6 text-foreground/80">¿Por qué elegir OrFlash?</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {items.map(item => {
             const inner = (
-              <div className="flex flex-col items-center gap-4 p-6 rounded-2xl border border-border bg-card hover:shadow-lg hover:border-violet-300 transition-all cursor-pointer group">
+              <div className="flex flex-col items-center gap-3 p-4 rounded-2xl border border-border bg-card hover:shadow-md hover:border-violet-300 transition-all cursor-pointer group">
                 {item.icon ? (
                   <img
                     src={`/storage/${item.icon}`}
                     alt={item.title}
-                    className="w-16 h-16 object-contain rounded-2xl group-hover:scale-110 transition-transform"
+                    className="w-12 h-12 object-contain rounded-xl group-hover:scale-110 transition-transform"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Zap className="w-8 h-8 text-violet-500" />
+                  <div className="w-12 h-12 rounded-xl bg-linear-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Zap className="w-6 h-6 text-violet-500" />
                   </div>
                 )}
-                <p className="text-sm font-semibold text-center leading-snug">{item.title}</p>
+                <p className="text-xs font-semibold text-center leading-tight">{item.title}</p>
                 {item.redirect_url && (
-                  <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 )}
               </div>
             );
@@ -260,7 +261,7 @@ export default function PublicHome() {
 
   const [search,        setSearch]      = useState('');
   const [selectedCat,   setSelectedCat] = useState('Todas');
-  const [activeTab,     setActiveTab]   = useState<'stores' | 'products'>('stores');
+  const [activeTab,     setActiveTab]   = useState<'all' | 'stores' | 'products'>('all');
   const [showAuthModal, setAuthModal]   = useState(false);
 
   const categories = ['Todas', ...Array.from(new Set(stores.map(s => s.category)))];
@@ -364,33 +365,40 @@ export default function PublicHome() {
           ))}
         </div>
 
-        {/* Tabs */}
+        {/* Tabs: Todas | Tiendas | Productos */}
         <div className="flex gap-1 p-1 bg-secondary rounded-xl w-fit">
-          {(['stores', 'products'] as const).map(tab => (
+          {([
+            { key: 'all',      label: `✨ Todas` },
+            { key: 'stores',   label: `🏪 Tiendas (${filteredStores.length})` },
+            { key: 'products', label: `🛍️ Productos (${filteredProducts.length})` },
+          ] as const).map(tab => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === tab
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === tab.key
                   ? 'bg-card shadow-sm text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {tab === 'stores'
-                ? `🏪 Tiendas (${filteredStores.length})`
-                : `🛍️ Productos (${filteredProducts.length})`}
+              {tab.label}
             </button>
           ))}
         </div>
 
         {/* ── Grid Tiendas ── */}
-        {activeTab === 'stores' && (
+        {(activeTab === 'stores' || activeTab === 'all') && (
           <>
+            {activeTab === 'all' && (
+              <h2 className="text-xs font-bold text-foreground/70 uppercase tracking-wide">Tiendas</h2>
+            )}
             {filteredStores.length === 0 ? (
-              <div className="flex flex-col items-center py-20 gap-4 text-muted-foreground">
-                <Store className="w-12 h-12" />
-                <p>No se encontraron tiendas</p>
-              </div>
+              activeTab !== 'all' && (
+                <div className="flex flex-col items-center py-20 gap-4 text-muted-foreground">
+                  <Store className="w-12 h-12" />
+                  <p>No se encontraron tiendas</p>
+                </div>
+              )
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredStores.map((store, i) => (
@@ -462,13 +470,18 @@ export default function PublicHome() {
         )}
 
         {/* ── Grid Productos ── */}
-        {activeTab === 'products' && (
+        {(activeTab === 'products' || activeTab === 'all') && (
           <>
+            {activeTab === 'all' && (
+              <h2 className="text-xs font-bold text-foreground/70 uppercase tracking-wide">Productos</h2>
+            )}
             {filteredProducts.length === 0 ? (
-              <div className="flex flex-col items-center py-20 gap-4 text-muted-foreground">
-                <ShoppingBag className="w-12 h-12" />
-                <p>No se encontraron productos</p>
-              </div>
+              activeTab !== 'all' && (
+                <div className="flex flex-col items-center py-20 gap-4 text-muted-foreground">
+                  <ShoppingBag className="w-12 h-12" />
+                  <p>No se encontraron productos</p>
+                </div>
+              )
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredProducts.map((product, i) => (
@@ -564,6 +577,12 @@ export default function PublicHome() {
                   </p>
                 </div>
                 <div className="space-y-3">
+                  <GoogleButton />
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground">o con email</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
                   <Link
                     href="/login"
                     className="w-full py-3 rounded-xl bg-linear-to-r from-violet-600 to-purple-600 text-white font-bold text-sm shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2"

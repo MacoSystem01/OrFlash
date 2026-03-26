@@ -19,8 +19,18 @@ class ReviewController extends Controller
         $request->validate([
             'rating'   => 'required|integer|min:1|max:5',
             'comment'  => 'nullable|string|max:500',
-            'order_id' => 'nullable|exists:orders,id',
+            'order_id' => 'nullable|integer|exists:orders,id',
         ]);
+
+        // Verificar que el pedido pertenece al usuario autenticado, a esta tienda
+        // y que ya fue entregado — previene IDOR y reseñas de pedidos ajenos
+        if ($request->order_id) {
+            Order::where('id', $request->order_id)
+                ->where('client_id', Auth::id())
+                ->where('store_id', $storeId)
+                ->where('status', 'delivered')
+                ->firstOrFail();
+        }
 
         StoreReview::updateOrCreate(
             [
@@ -48,8 +58,17 @@ class ReviewController extends Controller
         $request->validate([
             'rating'   => 'required|integer|min:1|max:5',
             'comment'  => 'nullable|string|max:500',
-            'order_id' => 'nullable|exists:orders,id',
+            'order_id' => 'nullable|integer|exists:orders,id',
         ]);
+
+        // Verificar que el pedido pertenece al usuario autenticado y al domiciliario indicado
+        if ($request->order_id) {
+            Order::where('id', $request->order_id)
+                ->where('client_id', Auth::id())
+                ->where('driver_id', $driverId)
+                ->where('status', 'delivered')
+                ->firstOrFail();
+        }
 
         DriverReview::updateOrCreate(
             [

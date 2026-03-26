@@ -8,6 +8,7 @@ import {
 import StoreLayout from '@/layouts/StoreLayout';
 import { router, usePage } from '@inertiajs/react';
 import { formatPrice } from '@/lib/format';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ function Toast({ message, type, onDone }: { message: string; type: ToastType; on
     >
       {type === 'success'
         ? <CheckCircle className="w-4 h-4 shrink-0" />
-        : <AlertCircle  className="w-4 h-4 shrink-0" />
+        : <AlertCircle className="w-4 h-4 shrink-0" />
       }
       {message}
     </div>
@@ -73,16 +74,16 @@ function ProductModal({
   const isEdit = !!product;
 
   const [form, setForm] = useState({
-    name:         product?.name         ?? '',
-    description:  product?.description  ?? '',
-    category:     product?.category     ?? '',
-    price:        product?.price        != null ? String(product.price) : '',
-    stock:        product?.stock        != null ? String(product.stock) : '',
+    name: product?.name ?? '',
+    description: product?.description ?? '',
+    category: product?.category ?? '',
+    price: product?.price != null ? String(product.price) : '',
+    stock: product?.stock != null ? String(product.stock) : '',
     is_available: product?.is_available ?? true,
   });
 
   const [processing, setProcessing] = useState(false);
-  const [errors,     setErrors]     = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const imageRef = useRef<HTMLInputElement>(null);
   // For edits, seed previews with existing images from storage
   const [previews, setPreviews] = useState<string[]>(
@@ -109,11 +110,11 @@ function ProductModal({
     setProcessing(true);
 
     const data = new FormData();
-    data.append('name',         form.name);
-    data.append('description',  form.description);
-    data.append('category',     form.category);
-    data.append('price',        form.price);
-    data.append('stock',        form.stock === '' ? '0' : form.stock);
+    data.append('name', form.name);
+    data.append('description', form.description);
+    data.append('category', form.category);
+    data.append('price', form.price);
+    data.append('stock', form.stock === '' ? '0' : form.stock);
     // Laravel boolean rule sólo acepta '1' y '0', no 'true'/'false'
     data.append('is_available', form.is_available ? '1' : '0');
 
@@ -132,12 +133,13 @@ function ProductModal({
       ? `/store/${storeId}/products/${product!.id}`
       : `/store/${storeId}/products`;
 
-    const method = isEdit ? 'put' : 'post';
+    // PHP no procesa multipart/form-data en PUT reales; usar method spoofing
+    if (isEdit) data.append('_method', 'PUT');
 
-    router[method](url, data as any, {
+    router.post(url, data as any, {
       forceFormData: true,
       onSuccess: () => { setProcessing(false); onClose(); },
-      onError:   errs => { setErrors(errs); setProcessing(false); },
+      onError: errs => { setErrors(errs); setProcessing(false); },
     });
   };
 
@@ -204,7 +206,7 @@ function ProductModal({
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Stock <span className="text-red-500">*</span>
+                Unds. Disponible <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -238,13 +240,11 @@ function ProductModal({
             <button
               type="button"
               onClick={() => u('is_available', !form.is_available)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                form.is_available ? 'bg-emerald-500' : 'bg-slate-300'
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.is_available ? 'bg-emerald-500' : 'bg-slate-300'
+                }`}
             >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                form.is_available ? 'translate-x-6' : 'translate-x-1'
-              }`} />
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${form.is_available ? 'translate-x-6' : 'translate-x-1'
+                }`} />
             </button>
           </div>
 
@@ -321,15 +321,16 @@ function ProductModal({
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export default function StoreProducts() {
+  useAutoRefresh(60_000);
   const { store, products } = usePage<PageProps>().props;
 
-  const [search,      setSearch]    = useState('');
-  const [modalOpen,   setModalOpen] = useState(false);
-  const [editProduct, setEdit]      = useState<Product | null>(null);
-  const [toast,       setToast]     = useState<{ message: string; type: ToastType } | null>(null);
-  const [processing,  setProcessing]= useState(false);
+  const [search, setSearch] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editProduct, setEdit] = useState<Product | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [processing, setProcessing] = useState(false);
 
-  const inStock  = products.filter(p => p.is_available).length;
+  const inStock = products.filter(p => p.is_available).length;
   const outStock = products.filter(p => !p.is_available).length;
   const categories = [...new Set(products.map(p => p.category))];
 
@@ -366,7 +367,7 @@ export default function StoreProducts() {
     router.delete(`/store/${store.id}/products/${product.id}`, {
       preserveScroll: true,
       onSuccess: () => setToast({ message: `"${product.name}" eliminado.`, type: 'success' }),
-      onError:   () => setToast({ message: 'Error al eliminar el producto.', type: 'error' }),
+      onError: () => setToast({ message: 'Error al eliminar el producto.', type: 'error' }),
     });
   }, [store.id]);
 
@@ -391,9 +392,9 @@ export default function StoreProducts() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: 'Total productos', value: products.length, gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-violet-500/40', icon: Package     },
-            { label: 'Disponibles',     value: inStock,         gradient: 'from-emerald-500 to-teal-600',  shadow: 'shadow-emerald-500/40',icon: TrendingUp  },
-            { label: 'Agotados',        value: outStock,        gradient: 'from-red-500 to-rose-600',      shadow: 'shadow-red-500/40',    icon: ShoppingBag },
+            { label: 'Total productos', value: products.length, gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-violet-500/40', icon: Package },
+            { label: 'Disponibles', value: inStock, gradient: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/40', icon: TrendingUp },
+            { label: 'Agotados', value: outStock, gradient: 'from-red-500 to-rose-600', shadow: 'shadow-red-500/40', icon: ShoppingBag },
           ].map(s => (
             <div key={s.label} className={`rounded-2xl p-5 bg-linear-to-br ${s.gradient} text-white shadow-xl ${s.shadow}`}>
               <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center mb-3">
@@ -449,11 +450,10 @@ export default function StoreProducts() {
               <StaggerList className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {catProducts.map(p => (
                   <StaggerItem key={p.id}>
-                    <div className={`rounded-2xl border overflow-hidden transition-all ${
-                      p.is_available
-                        ? 'border-border bg-card'
-                        : 'border-red-500/20 bg-red-500/5'
-                    }`}>
+                    <div className={`rounded-2xl border overflow-hidden transition-all ${p.is_available
+                      ? 'border-border bg-card'
+                      : 'border-red-500/20 bg-red-500/5'
+                      }`}>
                       <div className="p-4 flex items-center gap-4">
 
                         {/* Imagen o placeholder */}
@@ -472,8 +472,7 @@ export default function StoreProducts() {
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm truncate">{p.name}</p>
-                          <p className="text-xs text-muted-foreground">Stock: {p.stock} unidades</p>
-                          <p className="text-base font-bold text-violet-600 mt-0.5">{formatPrice(p.price)}</p>
+                          <p className="text-xs text-muted-foreground">Unds. Disponible: {p.stock}</p>                          <p className="text-base font-bold text-violet-600 mt-0.5">{formatPrice(p.price)}</p>
                         </div>
 
                         {/* Acciones */}
@@ -493,15 +492,14 @@ export default function StoreProducts() {
                             onClick={() => handleToggle(p)}
                             disabled={processing}
                             title={p.is_available ? 'Marcar agotado' : 'Marcar disponible'}
-                            className={`p-1.5 rounded-lg transition-colors disabled:opacity-40 ${
-                              p.is_available
-                                ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
-                                : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-                            }`}
+                            className={`p-1.5 rounded-lg transition-colors disabled:opacity-40 ${p.is_available
+                              ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                              : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                              }`}
                           >
                             {p.is_available
                               ? <ToggleRight className="w-5 h-5" />
-                              : <ToggleLeft  className="w-5 h-5" />
+                              : <ToggleLeft className="w-5 h-5" />
                             }
                           </button>
 
@@ -518,11 +516,10 @@ export default function StoreProducts() {
                       </div>
 
                       {/* Barra de estado */}
-                      <div className={`h-1 w-full ${
-                        p.is_available
-                          ? 'bg-linear-to-r from-violet-500 to-purple-600'
-                          : 'bg-linear-to-r from-red-400 to-rose-500'
-                      }`} />
+                      <div className={`h-1 w-full ${p.is_available
+                        ? 'bg-linear-to-r from-violet-500 to-purple-600'
+                        : 'bg-linear-to-r from-red-400 to-rose-500'
+                        }`} />
                     </div>
                   </StaggerItem>
                 ))}

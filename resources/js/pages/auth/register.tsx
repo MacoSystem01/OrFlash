@@ -1,10 +1,10 @@
 import { Head, router } from '@inertiajs/react';
-import { useState, useRef, useCallback } from 'react';
+import GoogleButton from '@/components/shared/GoogleButton';
+import { useState, useCallback } from 'react';
 import {
-  Zap, User, Mail, Lock, Phone, MapPin, Home,
+  Zap, User, Mail, Lock, Phone,
   Building, FileText, Car, Shield, ChevronRight,
-  ChevronLeft, Camera, Upload, CheckCircle,
-  CreditCard, Calendar, X
+  ChevronLeft, CheckCircle, CreditCard, Calendar, X
 } from 'lucide-react';
 
 type Role = 'client' | 'store' | 'driver' | null;
@@ -13,13 +13,6 @@ const roles = [
   { id: 'client', label: 'Cliente',       emoji: '🛒', desc: 'Quiero hacer pedidos a domicilio', gradient: 'from-blue-500 to-cyan-600',     shadow: 'shadow-blue-500/30'    },
   { id: 'store',  label: 'Comercio',      emoji: '🏪', desc: 'Quiero vender mis productos',       gradient: 'from-emerald-500 to-teal-600',  shadow: 'shadow-emerald-500/30' },
   { id: 'driver', label: 'Domiciliario',  emoji: '🛵', desc: 'Quiero realizar entregas y ganar',  gradient: 'from-orange-500 to-amber-500',  shadow: 'shadow-orange-500/30'  },
-];
-
-const vehicleTypes = [
-  { id: 'moto',      label: 'Moto',      emoji: '🛵' },
-  { id: 'bicicleta', label: 'Bicicleta', emoji: '🚲' },
-  { id: 'carro',     label: 'Carro',     emoji: '🚗' },
-  { id: 'a_pie',     label: 'A pie',     emoji: '🚶' },
 ];
 
 // ─── Componentes FUERA del componente principal ───────────────────────────────
@@ -51,32 +44,6 @@ function Field({ label, field, type = 'text', placeholder, icon: Icon, required 
   );
 }
 
-function FileUpload({ label, preview, inputRef, onChange, accept = 'image/*', optional = false }: any) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium flex items-center gap-1">
-        {label} {optional && <span className="text-xs text-muted-foreground">(opcional)</span>}
-      </label>
-      <div onClick={() => inputRef.current?.click()} className="border-2 border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:border-violet-500 hover:bg-violet-500/5 transition-all">
-        <input ref={inputRef} type="file" accept={accept} onChange={onChange} className="hidden" />
-        {preview ? (
-          <div className="flex items-center justify-center gap-2 text-emerald-600">
-            <CheckCircle className="w-5 h-5" />
-            {typeof preview === 'string' && preview.startsWith('data:image')
-              ? <img src={preview} className="w-16 h-16 object-cover rounded-lg mx-auto" alt="" />
-              : <span className="text-sm font-medium truncate max-w-50">{preview}</span>}
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <Upload className="w-6 h-6 text-muted-foreground mx-auto" />
-            <p className="text-xs text-muted-foreground">Toca para subir</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function SectionHeader({ num, title, gradient }: { num: string; title: string; gradient: string }) {
   return (
     <div className={`rounded-xl bg-linear-to-r ${gradient} px-4 py-2.5 flex items-center gap-2`}>
@@ -92,46 +59,19 @@ export default function Register() {
   const [role, setRole] = useState<Role>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState(false);
-  const [docPhotoPreview,      setDocPhotoPreview]      = useState('');
-  const [selfiePreview,        setSelfiePreview]        = useState('');
-  const [profilePhotoPreview,  setProfilePhotoPreview]  = useState('');
-  const [vehiclePhotoPreviews, setVehiclePhotoPreviews] = useState<string[]>([]);
 
-  const docPhotoRef      = useRef<HTMLInputElement>(null);
-  const selfieRef        = useRef<HTMLInputElement>(null);
-  const profilePhotoRef  = useRef<HTMLInputElement>(null);
-  const vehiclePhotosRef = useRef<HTMLInputElement>(null);
-  const soatRef          = useRef<HTMLInputElement>(null);
-  const licenseRef       = useRef<HTMLInputElement>(null);
-  const chamberRef       = useRef<HTMLInputElement>(null);
-  const rutRef           = useRef<HTMLInputElement>(null);
+  const chamberRef = { current: null as HTMLInputElement | null };
+  const rutRef     = { current: null as HTMLInputElement | null };
 
   const [form, setForm] = useState({
-    name: '', email: '', password: '', password_confirmation: '', phone: '',
-    address: '', neighborhood: '', city: '', references: '', alternate_phone: '', cedula: '',
+    name: '', email: '', password: '', password_confirmation: '', phone: '', cedula: '',
     document_type: 'CC', document_number: '', birth_date: '',
-    vehicle_type: '', vehicle_brand: '', vehicle_model: '', vehicle_color: '', vehicle_plate: '',
-    accepted_terms: false, accepted_data_policy: false, accepted_responsibility: false,
+    accepted_terms: false, accepted_data_policy: false,
     merchant_type: 'natural', business_name: '', document_or_nit: '', legal_representative: '',
   });
 
-  // ─── CRÍTICO: useCallback con deps vacías → u es estable ───────────────────
   const u = useCallback((field: string, value: any) =>
     setForm(p => ({ ...p, [field]: value })), []);
-
-  const handleFilePreview = (file: File, setter: (s: string) => void) => {
-    const reader = new FileReader();
-    reader.onload = e => setter(e.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleVehiclePhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
-    Array.from(e.target.files ?? []).forEach(f => {
-      const reader = new FileReader();
-      reader.onload = ev => setVehiclePhotoPreviews(p => [...p, ev.target?.result as string]);
-      reader.readAsDataURL(f);
-    });
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,15 +79,12 @@ export default function Register() {
     const data = new FormData();
     Object.entries(form).forEach(([k, v]) => data.append(k, String(v)));
     data.append('role', role!);
-    if (docPhotoRef.current?.files?.[0])      data.append('document_photo',       docPhotoRef.current.files[0]);
-    if (selfieRef.current?.files?.[0])        data.append('selfie_photo',          selfieRef.current.files[0]);
-    if (profilePhotoRef.current?.files?.[0])  data.append('profile_photo',         profilePhotoRef.current.files[0]);
-    if (soatRef.current?.files?.[0])          data.append('soat',                  soatRef.current.files[0]);
-    if (licenseRef.current?.files?.[0])       data.append('license',               licenseRef.current.files[0]);
-    if (chamberRef.current?.files?.[0])       data.append('chamber_of_commerce',   chamberRef.current.files[0]);
-    if (rutRef.current?.files?.[0])           data.append('rut',                   rutRef.current.files[0]);
-    if (vehiclePhotosRef.current?.files)
-      Array.from(vehiclePhotosRef.current.files).forEach(f => data.append('vehicle_photos[]', f));
+
+    // Archivos de comercio
+    const chamberInput = document.getElementById('chamber_of_commerce') as HTMLInputElement;
+    const rutInput     = document.getElementById('rut_file') as HTMLInputElement;
+    if (chamberInput?.files?.[0]) data.append('chamber_of_commerce', chamberInput.files[0]);
+    if (rutInput?.files?.[0])     data.append('rut', rutInput.files[0]);
 
     router.post('/register', data, {
       onError:   errs => { setErrors(errs); setProcessing(false); },
@@ -155,10 +92,6 @@ export default function Register() {
     });
   };
 
-  // ─── CORRECCIÓN DEL BUG ────────────────────────────────────────────────────
-  // F se usa como función normal {F({...})} NO como componente <F .../>.
-  // Usar <F .../> hace que React desmonte/monte el input en cada render
-  // porque la referencia de la función cambia en cada render del padre.
   const F = (props: Omit<Parameters<typeof Field>[0], 'value' | 'onChange' | 'error'>) =>
     Field({
       ...props,
@@ -166,8 +99,6 @@ export default function Register() {
       onChange: u,
       error:    errors[props.field],
     });
-
-  const needsMotorVehicleDocs = form.vehicle_type === 'moto' || form.vehicle_type === 'carro';
 
   const btnGradient = role === 'client'
     ? 'from-blue-500 to-cyan-600'
@@ -240,6 +171,12 @@ export default function Register() {
                   </button>
                 ))}
               </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">o regístrate con</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              <GoogleButton />
               <p className="text-center text-sm text-muted-foreground">
                 ¿Ya tienes cuenta?{' '}
                 <a href="/login" className="text-violet-600 font-semibold">Inicia sesión</a>
@@ -260,7 +197,7 @@ export default function Register() {
                     {role === 'client' ? '🛒 Registro Cliente' : role === 'store' ? '🏪 Registro Comercio' : '🛵 Registro Domiciliario'}
                   </h2>
                   <p className="text-muted-foreground text-sm">
-                    {role !== 'client' ? 'Tu cuenta será revisada antes de activarse (24-48h)' : 'Completa tus datos para empezar a pedir'}
+                    {role !== 'client' ? 'Tu cuenta será revisada antes de activarse (24-48h)' : 'Datos básicos — dirección y foto se configuran al ingresar'}
                   </p>
                 </div>
               </div>
@@ -272,45 +209,31 @@ export default function Register() {
                 </div>
               )}
 
-              {/* ═══ CLIENTE ═══ */}
+              {/* ═══ CLIENTE — fase 1: solo datos básicos ═══ */}
               {role === 'client' && (
                 <>
                   <SectionHeader num="1" title="Datos básicos" gradient="from-blue-500 to-cyan-600" />
+                  <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 px-4 py-3 text-xs text-blue-700">
+                    Al ingresar completarás tu dirección de entrega y foto de perfil.
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">{F({label: 'Nombre completo', field: 'name', placeholder: 'Tu nombre completo', icon: User, required: true})}</div>
                     {F({label: 'Celular', field: 'phone', placeholder: '3001234567', icon: Phone, required: true})}
                     {F({label: 'Cédula',  field: 'cedula', placeholder: 'Opcional', icon: CreditCard, optional: true})}
                     <div className="sm:col-span-2">{F({label: 'Correo electrónico', field: 'email', type: 'email', placeholder: 'correo@ejemplo.com', icon: Mail, required: true})}</div>
-                    {F({label: 'Contraseña',         field: 'password',              type: 'password', placeholder: 'Mín. 8 caracteres', icon: Lock, required: true})}
+                    {F({label: 'Contraseña',           field: 'password',              type: 'password', placeholder: 'Mín. 8 caracteres', icon: Lock, required: true})}
                     {F({label: 'Confirmar contraseña', field: 'password_confirmation', type: 'password', placeholder: 'Repite',             icon: Lock, required: true})}
                   </div>
-
-                  <SectionHeader num="2" title="Datos de ubicación" gradient="from-blue-500 to-cyan-600" />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2">{F({label: 'Dirección exacta', field: 'address',      placeholder: 'Calle 45 #12-30', icon: MapPin,   required: true})}</div>
-                    {F({label: 'Barrio',  field: 'neighborhood', placeholder: 'Tu barrio', icon: Home,     required: true})}
-                    {F({label: 'Ciudad',  field: 'city',         placeholder: 'Tu ciudad', icon: Building, required: true})}
-                    <div className="sm:col-span-2">
-                      <label className="text-sm font-medium flex items-center gap-1 mb-1.5">
-                        Referencias <span className="text-xs text-muted-foreground">(opcional)</span>
-                      </label>
-                      <textarea value={form.references} onChange={e => u('references', e.target.value)}
-                        placeholder="Ej: Casa verde, portón negro, torre 2 apto 301" rows={2}
-                        className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm outline-none focus:border-violet-500 resize-none" />
-                    </div>
-                    {F({label: 'Número alterno', field: 'alternate_phone', placeholder: 'Opcional', icon: Phone, optional: true})}
-                  </div>
-
-                  <SectionHeader num="3" title="Foto de perfil" gradient="from-blue-500 to-cyan-600" />
-                  <FileUpload label="Foto de perfil" preview={profilePhotoPreview} inputRef={profilePhotoRef}
-                    onChange={(e: any) => { const f = e.target.files?.[0]; if (f) handleFilePreview(f, setProfilePhotoPreview); }} optional />
                 </>
               )}
 
-              {/* ═══ DOMICILIARIO ═══ */}
+              {/* ═══ DOMICILIARIO — fase 1: solo datos personales ═══ */}
               {role === 'driver' && (
                 <>
                   <SectionHeader num="1" title="Datos personales" gradient="from-orange-500 to-amber-500" />
+                  <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 px-4 py-3 text-xs text-orange-700">
+                    Al ingresar completarás tus fotos, dirección y datos del vehículo.
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">{F({label: 'Nombre completo', field: 'name', placeholder: 'Tu nombre completo', icon: User, required: true})}</div>
                     <div className="space-y-1.5">
@@ -329,128 +252,8 @@ export default function Register() {
                     </div>
                     {F({label: 'Celular', field: 'phone', placeholder: '3001234567', icon: Phone, required: true})}
                     <div className="sm:col-span-2">{F({label: 'Correo electrónico', field: 'email', type: 'email', placeholder: 'correo@ejemplo.com', icon: Mail, required: true})}</div>
-                    {F({label: 'Contraseña',          field: 'password',              type: 'password', placeholder: 'Mín. 8 caracteres', icon: Lock, required: true})}
+                    {F({label: 'Contraseña',           field: 'password',              type: 'password', placeholder: 'Mín. 8 caracteres', icon: Lock, required: true})}
                     {F({label: 'Confirmar contraseña', field: 'password_confirmation', type: 'password', placeholder: 'Repite',            icon: Lock, required: true})}
-                  </div>
-
-                  <SectionHeader num="2" title="Fotos de validación" gradient="from-orange-500 to-amber-500" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <FileUpload label="Foto del documento" preview={docPhotoPreview} inputRef={docPhotoRef}
-                      onChange={(e: any) => { const f = e.target.files?.[0]; if (f) handleFilePreview(f, setDocPhotoPreview); }} />
-                    <FileUpload label="Selfie biométrica" preview={selfiePreview} inputRef={selfieRef}
-                      onChange={(e: any) => { const f = e.target.files?.[0]; if (f) handleFilePreview(f, setSelfiePreview); }} />
-                  </div>
-
-                  <SectionHeader num="3" title="Datos de residencia" gradient="from-orange-500 to-amber-500" />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2">{F({label: 'Dirección', field: 'address', placeholder: 'Tu dirección', icon: MapPin, required: true})}</div>
-                    {F({label: 'Barrio', field: 'neighborhood', placeholder: 'Tu barrio', icon: Home,     required: true})}
-                    {F({label: 'Ciudad', field: 'city',         placeholder: 'Tu ciudad', icon: Building, required: true})}
-                  </div>
-
-                  <SectionHeader num="4" title="Datos del vehículo" gradient="from-orange-500 to-amber-500" />
-                  <div className="space-y-4">
-
-                    {/* Tipo de vehículo */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Tipo de vehículo <span className="text-red-500">*</span></label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {vehicleTypes.map(v => (
-                          <button key={v.id} type="button" onClick={() => u('vehicle_type', v.id)}
-                            className={`p-3 rounded-xl border text-center transition-all ${form.vehicle_type === v.id ? 'border-orange-500 bg-orange-500/10 text-orange-600' : 'border-border hover:border-orange-400'}`}>
-                            <div className="text-2xl">{v.emoji}</div>
-                            <div className="text-xs font-medium mt-1">{v.label}</div>
-                          </button>
-                        ))}
-                      </div>
-                      {errors.vehicle_type && <p className="text-xs text-red-500 mt-1">{errors.vehicle_type}</p>}
-                    </div>
-
-                    {/* Campos condicionales para vehículo */}
-                    {form.vehicle_type && form.vehicle_type !== 'a_pie' && (
-                      <div className="grid grid-cols-2 gap-3">
-                        {F({label: 'Marca', field: 'vehicle_brand', placeholder: 'Ej: Honda', icon: Car})}
-                        {F({label: 'Color', field: 'vehicle_color', placeholder: 'Ej: Rojo', icon: Car})}
-                        {/* Modelo y placa — solo para vehículos motorizados */}
-                        {form.vehicle_type !== 'bicicleta' && F({label: 'Modelo / Año', field: 'vehicle_model', placeholder: 'Ej: 2022', icon: Car})}
-                        {needsMotorVehicleDocs && F({label: 'Placa', field: 'vehicle_plate', placeholder: 'Ej: ABC123', icon: Car})}
-                      </div>
-                    )}
-
-                    {/* Foto del vehículo (siempre si no es a_pie) */}
-                    {form.vehicle_type && form.vehicle_type !== 'a_pie' && (
-                      <div>
-                        <label className="text-sm font-medium mb-1.5 block">
-                          Foto del vehículo {needsMotorVehicleDocs ? <span className="text-red-500">*</span> : <span className="text-xs text-muted-foreground">(opcional)</span>}
-                        </label>
-                        <div onClick={() => vehiclePhotosRef.current?.click()}
-                          className="border-2 border-dashed border-border rounded-xl p-3 text-center cursor-pointer hover:border-orange-500 transition-all">
-                          <input ref={vehiclePhotosRef} type="file" accept="image/*" multiple onChange={handleVehiclePhotos} className="hidden" />
-                          <Camera className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
-                          <p className="text-xs text-muted-foreground">Toca para subir fotos</p>
-                        </div>
-                        {vehiclePhotoPreviews.length > 0 && (
-                          <div className="flex gap-2 flex-wrap mt-2">
-                            {vehiclePhotoPreviews.map((src, i) => (
-                              <div key={i} className="relative">
-                                <img src={src} className="w-16 h-16 object-cover rounded-lg border border-border" alt="" />
-                                <button type="button" onClick={() => setVehiclePhotoPreviews(p => p.filter((_, j) => j !== i))}
-                                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center">
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* SOAT y Licencia — obligatorios para moto/carro */}
-                    {needsMotorVehicleDocs && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <FileUpload
-                            label={<>SOAT vigente <span className="text-red-500">*</span></>}
-                            preview={soatRef.current?.files?.[0]?.name || ''}
-                            inputRef={soatRef}
-                            onChange={() => {}}
-                            accept=".pdf,.jpg,.jpeg,.png"
-                          />
-                          {errors.soat && <p className="text-xs text-red-500 mt-1">{errors.soat}</p>}
-                        </div>
-                        <div>
-                          <FileUpload
-                            label={<>Licencia de conducción <span className="text-red-500">*</span></>}
-                            preview={licenseRef.current?.files?.[0]?.name || ''}
-                            inputRef={licenseRef}
-                            onChange={() => {}}
-                            accept=".pdf,.jpg,.jpeg,.png"
-                          />
-                          {errors.license && <p className="text-xs text-red-500 mt-1">{errors.license}</p>}
-                        </div>
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* Validaciones legales */}
-                  <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
-                    <p className="text-sm font-semibold">Validaciones legales <span className="text-red-500">*</span></p>
-                    {[
-                      { field: 'accepted_terms',          label: 'Acepto los términos y condiciones de OrFlash' },
-                      { field: 'accepted_data_policy',    label: 'Autorizo el tratamiento de mis datos personales (Ley 1581 de 2012)' },
-                      { field: 'accepted_responsibility', label: 'Acepto la responsabilidad sobre los pedidos asignados' },
-                    ].map(item => (
-                      <label key={item.field} className="flex items-start gap-3 cursor-pointer">
-                        <input type="checkbox" checked={form[item.field as keyof typeof form] as boolean}
-                          onChange={e => u(item.field, e.target.checked)}
-                          className="mt-0.5 w-4 h-4 rounded accent-orange-500" />
-                        <span className="text-sm">{item.label}</span>
-                      </label>
-                    ))}
-                    {(errors.accepted_terms || errors.accepted_data_policy || errors.accepted_responsibility) && (
-                      <p className="text-xs text-red-500">Debes aceptar todos los términos para continuar</p>
-                    )}
                   </div>
                 </>
               )}
@@ -480,14 +283,28 @@ export default function Register() {
                     )}
                     {F({label: 'Celular', field: 'phone', placeholder: '3001234567', icon: Phone, required: true})}
                     <div className="sm:col-span-2">{F({label: 'Correo electrónico', field: 'email', type: 'email', placeholder: 'correo@ejemplo.com', icon: Mail, required: true})}</div>
-                    {F({label: 'Contraseña',          field: 'password',              type: 'password', placeholder: 'Mín. 8 caracteres', icon: Lock, required: true})}
+                    {F({label: 'Contraseña',           field: 'password',              type: 'password', placeholder: 'Mín. 8 caracteres', icon: Lock, required: true})}
                     {F({label: 'Confirmar contraseña', field: 'password_confirmation', type: 'password', placeholder: 'Repite',            icon: Lock, required: true})}
                   </div>
 
                   <SectionHeader num="3" title="Documentos legales (opcionales)" gradient="from-emerald-500 to-teal-600" />
                   <div className="grid grid-cols-2 gap-3">
-                    <FileUpload label="Cámara de comercio" preview={chamberRef.current?.files?.[0]?.name || ''} inputRef={chamberRef} onChange={() => {}} accept=".pdf,.jpg,.jpeg,.png" optional />
-                    <FileUpload label="RUT" preview={rutRef.current?.files?.[0]?.name || ''} inputRef={rutRef} onChange={() => {}} accept=".pdf,.jpg,.jpeg,.png" optional />
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium flex gap-1">Cámara de comercio <span className="text-xs text-muted-foreground">(opcional)</span></label>
+                      <label className="border-2 border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:border-emerald-500 transition-all block">
+                        <input id="chamber_of_commerce" type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" />
+                        <Building className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                        <p className="text-xs text-muted-foreground">Toca para subir</p>
+                      </label>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium flex gap-1">RUT <span className="text-xs text-muted-foreground">(opcional)</span></label>
+                      <label className="border-2 border-dashed border-border rounded-xl p-4 text-center cursor-pointer hover:border-emerald-500 transition-all block">
+                        <input id="rut_file" type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" />
+                        <FileText className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                        <p className="text-xs text-muted-foreground">Toca para subir</p>
+                      </label>
+                    </div>
                   </div>
 
                   <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-emerald-700">
@@ -508,11 +325,6 @@ export default function Register() {
                         <span className="text-sm">{item.label}</span>
                       </label>
                     ))}
-                  </div>
-
-                  <div className="rounded-xl border border-border bg-secondary/20 p-4 text-xs text-muted-foreground">
-                    <p className="font-semibold text-foreground mb-1">Autorización tratamiento de datos</p>
-                    <p>De conformidad con la <strong>Ley 1581 de 2012</strong> y el Decreto 1377 de 2013, autorizo a OrFlash para recolectar, almacenar y procesar mis datos personales. Habeas data: <strong>datos@orflash.com</strong>.</p>
                   </div>
                 </>
               )}

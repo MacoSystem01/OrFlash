@@ -77,9 +77,16 @@ class Wallet extends Model
      */
     public function releasePending(int $amount, int $orderId, string $description): void
     {
-        $this->decrement('pending_balance', $amount);
-        $this->increment('balance',         $amount);
-        $this->increment('total_earned',    $amount);
+        // Usar GREATEST(0, ...) para evitar underflow en columna UNSIGNED
+        // si por alguna razón creditPending no se ejecutó antes
+        \Illuminate\Support\Facades\DB::table('wallets')
+            ->where('id', $this->id)
+            ->update([
+                'pending_balance' => \Illuminate\Support\Facades\DB::raw("GREATEST(0, CAST(pending_balance AS SIGNED) - {$amount})"),
+                'balance'         => \Illuminate\Support\Facades\DB::raw("balance + {$amount}"),
+                'total_earned'    => \Illuminate\Support\Facades\DB::raw("total_earned + {$amount}"),
+                'updated_at'      => now(),
+            ]);
 
         $this->transactions()->create([
             'order_id'     => $orderId,
@@ -96,7 +103,12 @@ class Wallet extends Model
      */
     public function reversePending(int $amount, int $orderId, string $description): void
     {
-        $this->decrement('pending_balance', $amount);
+        \Illuminate\Support\Facades\DB::table('wallets')
+            ->where('id', $this->id)
+            ->update([
+                'pending_balance' => \Illuminate\Support\Facades\DB::raw("GREATEST(0, CAST(pending_balance AS SIGNED) - {$amount})"),
+                'updated_at'      => now(),
+            ]);
 
         $this->transactions()->create([
             'order_id'     => $orderId,

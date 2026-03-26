@@ -25,15 +25,26 @@ class PaymentController extends Controller
             ->where('status', 'pending_payment')
             ->findOrFail($orderId);
 
-        $reference  = 'ORD-' . str_pad($order->id, 8, '0', STR_PAD_LEFT);
+        // Verificar que las claves de Wompi estén configuradas
+        $publicKey       = config('services.wompi.public_key');
+        $integritySecret = config('services.wompi.integrity_secret');
+
+        if (empty($publicKey) || empty($integritySecret)) {
+            return response()->json([
+                'error'       => 'El pago en línea no está disponible en este momento.',
+                'wompi_error' => true,
+            ], 422);
+        }
+
+        $reference   = 'ORD-' . str_pad($order->id, 8, '0', STR_PAD_LEFT);
         $amountCents = $order->total * 100; // Wompi trabaja en centavos
 
         // Generar firma de integridad
-        $integrityString = $reference . $amountCents . 'COP' . config('services.wompi.integrity_secret');
+        $integrityString = $reference . $amountCents . 'COP' . $integritySecret;
         $signature       = hash('sha256', $integrityString);
 
         return response()->json([
-            'public_key'       => config('services.wompi.public_key'),
+            'public_key'       => $publicKey,
             'currency'         => 'COP',
             'amount_in_cents'  => $amountCents,
             'reference'        => $reference,
@@ -125,9 +136,13 @@ class PaymentController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        // Buscar la orden por referencia
-        // Formato: ORD-00000001
-        $orderId = (int) ltrim(str_replace('ORD-', '', $reference), '0');
+        // Buscar la orden por referencia — Formato esperado: ORD-00000001
+        if (!preg_match('/^ORD-(\d{1,20})$/', $reference, $matches)) {
+            Log::warning("Wompi webhook: formato de referencia inválido: {$reference}");
+            return response()->json(['ok' => true]);
+        }
+
+        $orderId = (int) $matches[1];
         $order   = Order::find($orderId);
 
         if (!$order) {

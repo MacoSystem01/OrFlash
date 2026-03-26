@@ -29,7 +29,7 @@ interface ProfileData {
 
 interface PaymentMethod {
   id: number;
-  type: 'cash' | 'pse' | 'nequi' | 'daviplata';
+  type: 'cash' | 'pse' | 'nequi' | 'daviplata' | 'contra_entrega';
   is_default: boolean;
   pse_bank?: string;
   pse_person_type?: string;
@@ -254,10 +254,17 @@ export default function ClientProfile() {
   const paymentOptions = [
     {
       key: 'cash',
-      label: 'Efectivo contra entrega',
-      desc: 'Paga cuando recibas tu pedido',
+      label: 'Efectivo',
+      desc: 'Paga en efectivo al recibir',
       emoji: '💵',
       gradient: 'from-emerald-500 to-teal-600',
+    },
+    {
+      key: 'contra_entrega',
+      label: 'Contra Entrega',
+      desc: 'Paga al recibir tu pedido (cualquier método)',
+      emoji: '🏠',
+      gradient: 'from-orange-500 to-amber-600',
     },
     {
       key: 'pse',
@@ -430,6 +437,7 @@ export default function ClientProfile() {
           <p className="text-xs text-muted-foreground px-1">Selecciona y configura tu método de pago</p>
           {paymentOptions.map(({ key, label, desc, emoji, gradient }) => {
             const saved = paymentMethods.find((m) => m.type === key);
+            const noConfig = key === 'cash' || key === 'contra_entrega';
             const isActive = saved !== undefined || key === 'cash';
             return (
               <div
@@ -448,7 +456,8 @@ export default function ClientProfile() {
                   )}
                 </div>
                 <div className="flex flex-col gap-1 shrink-0">
-                  {key !== 'cash' && (
+                  {/* Métodos con configuración extra (PSE, Nequi, Daviplata) */}
+                  {!noConfig && (
                     <button
                       onClick={() => setActivePayment(key)}
                       className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-xs font-semibold shadow-sm"
@@ -456,7 +465,26 @@ export default function ClientProfile() {
                       {saved ? 'Editar' : 'Configurar'}
                     </button>
                   )}
-                  {saved && key !== 'cash' && (
+                  {/* Contra Entrega: activar/predeterminar/quitar */}
+                  {key === 'contra_entrega' && !saved && (
+                    <button
+                      onClick={() => save('/client/profile/payment-method', { type: 'contra_entrega', is_default: false }, 'post')}
+                      disabled={saving}
+                      className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 text-white text-xs font-semibold shadow-sm disabled:opacity-50"
+                    >
+                      Activar
+                    </button>
+                  )}
+                  {key === 'contra_entrega' && saved && !saved.is_default && (
+                    <button
+                      onClick={() => save('/client/profile/payment-method', { type: 'contra_entrega', is_default: true }, 'post')}
+                      disabled={saving}
+                      className="px-3 py-1.5 rounded-xl border border-violet-500 text-violet-600 text-xs font-semibold disabled:opacity-50"
+                    >
+                      ★ Predeterminar
+                    </button>
+                  )}
+                  {saved && key === 'contra_entrega' && (
                     <button
                       onClick={() => deletePayment(key)}
                       className="px-3 py-1.5 rounded-xl bg-red-500/10 text-red-500 text-xs font-semibold flex items-center justify-center gap-1"
@@ -464,6 +492,16 @@ export default function ClientProfile() {
                       <Trash2 className="w-3 h-3" /> Quitar
                     </button>
                   )}
+                  {/* Métodos con config: botón quitar */}
+                  {saved && !noConfig && (
+                    <button
+                      onClick={() => deletePayment(key)}
+                      className="px-3 py-1.5 rounded-xl bg-red-500/10 text-red-500 text-xs font-semibold flex items-center justify-center gap-1"
+                    >
+                      <Trash2 className="w-3 h-3" /> Quitar
+                    </button>
+                  )}
+                  {/* Cash: siempre activo */}
                   {key === 'cash' && (
                     <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
                       <span className="text-white text-xs font-bold">✓</span>

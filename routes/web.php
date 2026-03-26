@@ -45,7 +45,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])
             Route::get('users/{id}',           'userDetail')->name('users.detail');
             Route::patch('users/{id}/toggle',  'toggleUser')->name('users.toggle');
             Route::get('stores',               'stores')->name('stores');
-            Route::patch('stores/{id}/toggle', 'toggleStore')->name('stores.toggle');
+            Route::patch('stores/{id}/toggle',   'toggleStore')->name('stores.toggle');
+            Route::patch('stores/{id}/delivery', 'updateStoreDelivery')->name('stores.delivery');
             Route::get('drivers',              'drivers')->name('drivers');
             Route::get('analytics',            'analytics')->name('analytics');
 
@@ -98,10 +99,15 @@ Route::middleware(['auth', 'verified', 'role:client'])
         // Tienda detalle con productos reales
         Route::get('store/{id}', [App\Http\Controllers\Order\OrderController::class, 'storeDetail'])->name('store-detail');
 
+        // Coordenadas y tarifa de domicilio de una tienda (para calcular tarifa en checkout)
+        Route::get('stores/{storeId}/location', [App\Http\Controllers\Order\OrderController::class, 'storeLocation'])->name('stores.location');
+
         // Pedidos
         Route::post('orders',              [App\Http\Controllers\Order\OrderController::class, 'store'])->name('orders.store');
         Route::get('orders',               [App\Http\Controllers\Order\OrderController::class, 'clientOrders'])->name('orders');
-        Route::get('orders/{orderId}/tracking', [App\Http\Controllers\Order\OrderController::class, 'tracking'])->name('order-tracking');
+        Route::get('orders/{orderId}/tracking',  [App\Http\Controllers\Order\OrderController::class, 'tracking'])->name('order-tracking');
+        Route::delete('orders/{orderId}/cancel',      [App\Http\Controllers\Order\OrderController::class, 'cancelOrder'])->name('orders.cancel');
+        Route::post('orders/{orderId}/switch-to-cod', [App\Http\Controllers\Order\OrderController::class, 'switchToCod'])->name('orders.switch-to-cod');
 
         // Pagos Wompi
         Route::get('payments/generate/{orderId}', [App\Http\Controllers\Payment\PaymentController::class, 'generatePayment'])->name('payments.generate');
@@ -140,16 +146,19 @@ Route::middleware(['auth', 'verified', 'role:store'])
         Route::controller(App\Http\Controllers\Store\StoreController::class)->group(function () {
             Route::get('/',                    'index')->name('index');
             Route::post('/',                   'store')->name('store');
-            Route::get('{storeId}/profile',    'profile')->name('profile');
+            Route::get('{storeId}/profile',           'profile')->name('profile');
             Route::match(['patch','post'], '{storeId}/info', 'updateInfo')->name('info.update');
-            Route::patch('{storeId}/hours',    'updateHours')->name('hours.update');
+            Route::patch('{storeId}/hours',           'updateHours')->name('hours.update');
+            Route::patch('{storeId}/payment-methods', 'updatePaymentMethods')->name('payment-methods.update');
         });
 
         // Dashboard y pedidos — OrderController
         Route::get('{storeId}/dashboard',                  [App\Http\Controllers\Order\OrderController::class, 'storeDashboard'])->name('dashboard');
         Route::get('{storeId}/orders',                     [App\Http\Controllers\Order\OrderController::class, 'storeOrders'])->name('orders');
-        Route::patch('{storeId}/orders/{orderId}/advance', [App\Http\Controllers\Order\OrderController::class, 'advanceOrder'])->name('orders.advance');
+        Route::patch('{storeId}/orders/{orderId}/advance',    [App\Http\Controllers\Order\OrderController::class, 'advanceOrder'])->name('orders.advance');
+        Route::post('{storeId}/orders/{orderId}/reject-cod',  [App\Http\Controllers\Order\OrderController::class, 'rejectCodOrder'])->name('orders.reject-cod');
         Route::get('{storeId}/history',                    [App\Http\Controllers\Order\OrderController::class, 'storeHistory'])->name('history');
+        Route::get('{storeId}/report',                     [App\Http\Controllers\Order\OrderController::class, 'storeReport'])->name('report');
         Route::get('{storeId}/business-status',            [App\Http\Controllers\Order\OrderController::class, 'businessStatusPage'])->name('business-status');
         Route::patch('{storeId}/toggle-status',            [App\Http\Controllers\Order\OrderController::class, 'toggleStoreStatus'])->name('toggle-status');
 
@@ -183,8 +192,9 @@ Route::middleware(['auth', 'verified', 'role:driver'])
     ->group(function () {
 
         Route::get('dashboard',    [App\Http\Controllers\Driver\DriverController::class, 'dashboard'])->name('dashboard');
-        Route::get('profile',      [App\Http\Controllers\Driver\DriverController::class, 'profile'])->name('profile');
-        Route::patch('profile',    [App\Http\Controllers\Driver\DriverController::class, 'updateProfile'])->name('profile.update');
+        Route::get('profile',        [App\Http\Controllers\Driver\DriverController::class, 'profile'])->name('profile');
+        Route::patch('profile',      [App\Http\Controllers\Driver\DriverController::class, 'updateProfile'])->name('profile.update');
+        Route::post('profile/documents', [App\Http\Controllers\Driver\DriverController::class, 'updateDocuments'])->name('profile.documents');
 
         // Pedidos — OrderController
         Route::get('available-orders',      [App\Http\Controllers\Order\OrderController::class, 'availableOrders'])->name('available-orders');
@@ -212,11 +222,30 @@ Route::post('api/payments/webhook', [App\Http\Controllers\Payment\PaymentControl
 | AUTH
 |--------------------------------------------------------------------------
 */
-Route::post('/login',    [App\Http\Controllers\Auth\LoginController::class,    'store'])->middleware(['guest', 'throttle:5,1'])->name('login.custom');
+Route::post('/login',    [App\Http\Controllers\Auth\LoginController::class,    'store'])->middleware(['guest', 'throttle:20,1'])->name('login.custom');
 Route::post('/register', [App\Http\Controllers\Auth\RegisterController::class, 'store'])->middleware(['guest', 'throttle:10,5'])->name('register.custom');
+
+// Google OAuth
+Route::get('/auth/google',          [App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect'])->name('auth.google');
+Route::get('/auth/google/callback', [App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 Route::post('/logout',   [App\Http\Controllers\Auth\LogoutController::class,   'store'])->middleware('auth')->name('logout');
 
 Route::inertia('/pending-approval', 'auth/pending-approval')->name('pending');
+
+/*
+|--------------------------------------------------------------------------
+| SETUP INICIAL DE PERFIL (fuera del middleware role para drivers pendientes)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'throttle:20,1'])->group(function () {
+    Route::post('/client/profile/complete-setup',
+        [App\Http\Controllers\Client\ClientProfileController::class, 'completeSetup']
+    )->name('client.profile.complete-setup');
+
+    Route::post('/driver/profile/complete-setup',
+        [App\Http\Controllers\Driver\DriverController::class, 'completeSetup']
+    )->name('driver.profile.complete-setup');
+});
 
 /*
 |--------------------------------------------------------------------------

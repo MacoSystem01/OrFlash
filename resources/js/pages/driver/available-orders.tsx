@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { PageTransition } from '@/components/shared/Animations';
 import { router, usePage } from '@inertiajs/react';
 import { MapPin, CheckCircle, Package } from 'lucide-react';
@@ -13,6 +14,9 @@ interface Store {
   id: number;
   business_name: string;
   address: string;
+  latitude: number | null;
+  longitude: number | null;
+  coverage_radius_m: number | null;
 }
 
 interface Order {
@@ -31,7 +35,48 @@ interface PageProps {
   [key: string]: unknown;
 }
 
+const REFRESH_INTERVAL = 30_000;
+
+function useGpsRefresh() {
+  useEffect(() => {
+    let id: ReturnType<typeof setInterval> | null = null;
+
+    const visit = (lat?: string, lng?: string) => {
+      const data: Record<string, string> = {};
+      if (lat !== undefined) data.lat = lat;
+      if (lng !== undefined) data.lng = lng;
+      router.visit('/driver/available-orders', {
+        data,
+        preserveScroll: true,
+        preserveState:  true,
+        replace:        true,
+      });
+    };
+
+    const refresh = () => {
+      if (!('geolocation' in navigator)) { visit(); return; }
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => visit(coords.latitude.toFixed(7), coords.longitude.toFixed(7)),
+        () => visit(),
+        { timeout: 5000, maximumAge: 15000 }
+      );
+    };
+
+    const run = () => {
+      if (id !== null) return;
+      id = setInterval(refresh, REFRESH_INTERVAL);
+    };
+    const pause = () => { if (id !== null) { clearInterval(id); id = null; } };
+    const handleVisibility = () => document.hidden ? pause() : run();
+
+    run();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => { pause(); document.removeEventListener('visibilitychange', handleVisibility); };
+  }, []);
+}
+
 export default function DriverAvailableOrders() {
+  useGpsRefresh();
   const {
     availableOrders = [],
     myActiveOrders = [],
@@ -39,10 +84,26 @@ export default function DriverAvailableOrders() {
     canAcceptMore = true,
   } = usePage<PageProps>().props;
 
-  const handleAccept = (orderId: number) => {
-    router.post(`/driver/orders/${orderId}/accept`, {}, {
-      preserveScroll: true,
-    });
+  const handleAccept = (orderId: number, store: Store) => {
+    const doAccept = (lat?: number, lng?: number) => {
+      const payload: Record<string, number> = {};
+      if (lat !== undefined && lng !== undefined) {
+        payload.lat = lat;
+        payload.lng = lng;
+      }
+      router.post(`/driver/orders/${orderId}/accept`, payload, { preserveScroll: true });
+    };
+
+    if (!('geolocation' in navigator)) {
+      doAccept();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => doAccept(coords.latitude, coords.longitude),
+      ()            => doAccept(),
+      { timeout: 5000, maximumAge: 10000 }
+    );
   };
 
   return (
@@ -117,7 +178,7 @@ export default function DriverAvailableOrders() {
                   </p>
                 </div>
                 <button
-                  onClick={() => handleAccept(order.id)}
+                  onClick={() => handleAccept(order.id, order.store)}
                   disabled={!canAcceptMore}
                   className="w-full py-3.5 bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                 >

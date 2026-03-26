@@ -113,6 +113,21 @@ class AdminController extends Controller
         return back();
     }
 
+    public function updateStoreDelivery(Request $request, int $id)
+    {
+        $request->validate([
+            'delivery_fee'      => 'nullable|integer|min:0|max:999999',
+            'coverage_radius_m' => 'required|integer|min:100|max:2000',
+        ]);
+
+        Store::findOrFail($id)->update([
+            'delivery_fee'      => $request->delivery_fee,
+            'coverage_radius_m' => $request->coverage_radius_m,
+        ]);
+
+        return back()->with('success', 'Configuración de domicilio actualizada.');
+    }
+
     public function drivers()
     {
         $drivers = User::where('role', 'driver')
@@ -124,19 +139,94 @@ class AdminController extends Controller
 
     public function analytics()
     {
-        $stats = [
-            'total_users'   => User::whereIn('role', ['client', 'store', 'driver'])->count(),
-            'active_users'  => User::whereIn('role', ['client', 'store', 'driver'])->where('status', 'active')->count(),
-            'total_stores'  => Store::count(),
-            'active_stores' => Store::where('status', 'active')->count(),
-            'by_role' => [
-                'clients' => User::where('role', 'client')->count(),
-                'stores'  => User::where('role', 'store')->count(),
-                'drivers' => User::where('role', 'driver')->count(),
-            ],
+        $tz    = 'America/Bogota';
+        $today = \Carbon\Carbon::now($tz)->startOfDay();
+        $month = \Carbon\Carbon::now($tz)->startOfMonth();
+
+        // ── Usuarios ──────────────────────────────────────────────────────────
+        $totalUsers  = \App\Models\User::whereIn('role', ['client', 'store', 'driver'])->count();
+        $activeUsers = \App\Models\User::whereIn('role', ['client', 'store', 'driver'])->where('status', 'active')->count();
+        $byRole = [
+            'clients' => \App\Models\User::where('role', 'client')->count(),
+            'stores'  => \App\Models\User::where('role', 'store')->count(),
+            'drivers' => \App\Models\User::where('role', 'driver')->count(),
         ];
 
-        return Inertia::render('admin/analytics', ['stats' => $stats]);
+        // ── Tiendas ───────────────────────────────────────────────────────────
+        $totalStores  = Store::count();
+        $activeStores = Store::where('status', 'active')->count();
+
+        // ── Pedidos ───────────────────────────────────────────────────────────
+        $totalOrders      = \App\Models\Order::count();
+        $ordersToday      = \App\Models\Order::where('created_at', '>=', $today->utc())->count();
+        $ordersThisMonth  = \App\Models\Order::where('created_at', '>=', $month->utc())->count();
+        $pendingOrders    = \App\Models\Order::whereIn('status', ['pending', 'confirmed', 'preparing', 'ready'])->count();
+
+        $rawStatuses = \App\Models\Order::selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $byStatus = [
+            'Pendiente'   => (int) ($rawStatuses['pending']    ?? 0),
+            'Confirmado'  => (int) ($rawStatuses['confirmed']  ?? 0),
+            'Preparando'  => (int) ($rawStatuses['preparing']  ?? 0),
+            'Listo'       => (int) ($rawStatuses['ready']      ?? 0),
+            'En camino'   => (int) (($rawStatuses['picked_up'] ?? 0) + ($rawStatuses['in_transit'] ?? 0)),
+            'Entregado'   => (int) ($rawStatuses['delivered']  ?? 0),
+            'Cancelado'   => (int) ($rawStatuses['cancelled']  ?? 0),
+        ];
+
+        // ── Ingresos plataforma (platform_fee) ────────────────────────────────
+        $totalRevenue     = (int) \App\Models\Order::where('status', 'delivered')->sum('platform_fee');
+        $revenueToday     = (int) \App\Models\Order::where('status', 'delivered')
+                                ->where('delivered_at', '>=', $today->utc())
+                                ->sum('platform_fee');
+        $revenueThisMonth = (int) \App\Models\Order::where('status', 'delivered')
+                                ->where('delivered_at', '>=', $month->utc())
+                                ->sum('platform_fee');
+
+        // ── Pedidos últimos 7 días ─────────────────────────────────────────────
+        $ordersLast7Days = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $day      = \Carbon\Carbon::now($tz)->subDays($i);
+            $dayStart = $day->copy()->startOfDay()->utc();
+            $dayEnd   = $day->copy()->endOfDay()->utc();
+
+            $ordersLast7Days[] = [
+                'fecha'   => $day->format('d/m'),
+                'pedidos' => \App\Models\Order::whereBetween('created_at', [$dayStart, $dayEnd])->count(),
+                'ingresos'=> (int) \App\Models\Order::where('status', 'delivered')
+                                ->whereBetween('delivered_at', [$dayStart, $dayEnd])
+                                ->sum('platform_fee'),
+            ];
+        }
+
+        // ── Top 5 tiendas por pedidos ─────────────────────────────────────────
+        $topStores = Store::select('id', 'business_name')
+            ->withCount('orders')
+            ->orderByDesc('orders_count')
+            ->limit(5)
+            ->get();
+
+        return Inertia::render('admin/analytics', [
+            'stats' => [
+                'total_users'         => $totalUsers,
+                'active_users'        => $activeUsers,
+                'total_stores'        => $totalStores,
+                'active_stores'       => $activeStores,
+                'total_orders'        => $totalOrders,
+                'orders_today'        => $ordersToday,
+                'orders_this_month'   => $ordersThisMonth,
+                'pending_orders'      => $pendingOrders,
+                'total_revenue'       => $totalRevenue,
+                'revenue_today'       => $revenueToday,
+                'revenue_this_month'  => $revenueThisMonth,
+                'by_role'             => $byRole,
+                'by_status'           => $byStatus,
+            ],
+            'ordersLast7Days' => $ordersLast7Days,
+            'topStores'       => $topStores,
+        ]);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -146,7 +236,7 @@ class AdminController extends Controller
     public function settings()
     {
         return Inertia::render('admin/settings', [
-            'settings' => SystemSetting::toArray(),
+            'settings' => SystemSetting::allSettings(),
         ]);
     }
 
@@ -154,13 +244,13 @@ class AdminController extends Controller
     {
         $data = $request->validate([
             'general.contactEmail'                => 'required|email|max:255',
-            'finances.currency'                   => 'required|string|max:10',
+            'finances.currency'                   => 'required|in:COP,USD,EUR',
             'finances.storeCommissionPercentage'  => 'required|numeric|min:0|max:100',
             'finances.driverCommissionPercentage' => 'required|numeric|min:0|max:100',
-            'finances.paymentMethod'              => 'required|string|max:50',
-            'regional.timezone'                   => 'required|string|max:100',
-            'regional.language'                   => 'required|string|max:50',
-            'regional.dateFormat'                 => 'required|string|max:20',
+            'finances.paymentMethod'              => 'required|in:Wompi,MercadoPago,PayPal,Efectivo',
+            'regional.timezone'                   => ['required', 'string', 'in:' . implode(',', timezone_identifiers_list())],
+            'regional.language'                   => 'required|in:Español,Inglés,Portugués',
+            'regional.dateFormat'                 => 'required|in:DD/MM/YYYY,MM/DD/YYYY,YYYY-MM-DD',
             'notifications.alertEmail'            => 'required|email|max:255',
             'notifications.pushEnabled'           => 'boolean',
             'notifications.smsEnabled'            => 'boolean',
@@ -190,7 +280,7 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'image'        => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
-            'redirect_url' => 'nullable|url',
+            'redirect_url' => 'nullable|url|starts_with:http://,https://',
             'is_active'    => 'nullable|boolean',
             'order'        => 'nullable|integer|min:0',
         ]);
@@ -208,7 +298,7 @@ class AdminController extends Controller
 
         $validated = $request->validate([
             'image'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-            'redirect_url' => 'nullable|url',
+            'redirect_url' => 'nullable|url|starts_with:http://,https://',
             'is_active'    => 'nullable|boolean',
             'order'        => 'nullable|integer|min:0',
         ]);
@@ -257,8 +347,8 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'title'        => 'required|string|max:100',
-            'icon'         => 'nullable|file|max:5120',   // sin mimes: finfo de XAMPP detecta SVG como text/xml
-            'redirect_url' => 'nullable|url',
+            'icon'         => 'nullable|file|max:5120|mimetypes:image/svg+xml,image/png,image/jpeg,image/webp,image/gif',
+            'redirect_url' => 'nullable|url|starts_with:http://,https://',
             'is_active'    => 'nullable|boolean',
             'order'        => 'nullable|integer|min:0',
         ]);
@@ -278,8 +368,8 @@ class AdminController extends Controller
 
         $validated = $request->validate([
             'title'        => 'required|string|max:100',
-            'icon'         => 'nullable|file|max:5120',
-            'redirect_url' => 'nullable|url',
+            'icon'         => 'nullable|file|max:5120|mimetypes:image/svg+xml,image/png,image/jpeg,image/webp,image/gif',
+            'redirect_url' => 'nullable|url|starts_with:http://,https://',
             'is_active'    => 'nullable|boolean',
             'order'        => 'nullable|integer|min:0',
         ]);

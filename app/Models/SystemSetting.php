@@ -30,13 +30,14 @@ class SystemSetting extends Model
     /**
      * Return all settings as a nested array matching the frontend SettingsState shape.
      */
-    public static function toArray(): array
+    public static function allSettings(): array
     {
         $raw = static::all()->pluck('value', 'key');
 
         $defaults = [
             'general.contactEmail'                => 'support@orflash.com',
             'finances.currency'                   => 'COP',
+            'finances.deliveryFee'                => '2500',
             'finances.storeCommissionPercentage'  => '15',
             'finances.driverCommissionPercentage' => '10',
             'finances.paymentMethod'              => 'Stripe',
@@ -46,6 +47,9 @@ class SystemSetting extends Model
             'notifications.alertEmail'            => 'alerts@orflash.com',
             'notifications.pushEnabled'           => '1',
             'notifications.smsEnabled'            => '0',
+            'support.phone'                       => '+57 300 000 0000',
+            'support.whatsapp'                    => '573000000000',
+            'support.email'                       => 'soporte@orflash.com',
         ];
 
         $result = [];
@@ -57,6 +61,8 @@ class SystemSetting extends Model
             // Cast booleans
             if (in_array($field, ['pushEnabled', 'smsEnabled'], true)) {
                 $result[$section][$field] = $raw_val === '1';
+            } elseif ($field === 'deliveryFee') {
+                $result[$section][$field] = (int) $raw_val;
             } else {
                 $result[$section][$field] = $raw_val;
             }

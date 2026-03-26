@@ -1,9 +1,9 @@
 import { PageTransition } from '@/components/shared/Animations';
-import { usePage, router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import {
   Store, Clock, HelpCircle, ChevronRight, LogOut,
   Package, Star, TrendingUp, X, Save, Pencil,
-  Phone, MapPin, Tag, FileText, Upload,
+  Phone, MapPin, Tag, FileText, Upload, CreditCard,
 } from 'lucide-react';
 import StoreLayout from '@/layouts/StoreLayout';
 import { formatPrice } from '@/lib/format';
@@ -16,6 +16,8 @@ interface StoreData {
   business_name: string;
   description: string | null;
   address: string;
+  neighborhood: string | null;
+  city: string | null;
   phone: string | null;
   category: string;
   zone: string;
@@ -23,6 +25,7 @@ interface StoreData {
   closing_time: string;
   attention_days: string[] | null;
   images: string[] | null;
+  payment_methods: string[] | null;
   rating: number;
   status: string;
 }
@@ -42,6 +45,33 @@ interface PageProps {
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
+// ─── Campo genérico (fuera de todo componente para evitar re-montaje) ─────────
+
+function StoreField({
+  label, value, onChange, icon: Icon, placeholder, textarea = false, error,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  icon?: any; placeholder?: string; textarea?: boolean; error?: string;
+}) {
+  const cls = 'w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-colors';
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</label>
+      <div className="relative">
+        {Icon && <Icon className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />}
+        {textarea ? (
+          <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+            rows={3} className={`${cls} resize-none`} />
+        ) : (
+          <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+            className={cls} />
+        )}
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
 // ─── Modal: Información del negocio ──────────────────────────────────────────
 
 function BusinessInfoModal({ store, onClose }: { store: StoreData; onClose: () => void }) {
@@ -49,6 +79,8 @@ function BusinessInfoModal({ store, onClose }: { store: StoreData; onClose: () =
     business_name: store.business_name ?? '',
     description:   store.description  ?? '',
     address:       store.address       ?? '',
+    neighborhood:  store.neighborhood  ?? '',
+    city:          store.city          ?? '',
     phone:         store.phone         ?? '',
     category:      store.category      ?? '',
     zone:          store.zone          ?? '',
@@ -60,7 +92,7 @@ function BusinessInfoModal({ store, onClose }: { store: StoreData; onClose: () =
   );
   const imageRef = useRef<HTMLInputElement>(null);
 
-  const u = (field: string, value: string) => setForm(p => ({ ...p, [field]: value }));
+  const u = (field: keyof typeof form, value: string) => setForm(p => ({ ...p, [field]: value }));
 
   const handleImages = (e: React.ChangeEvent<HTMLInputElement>) => {
     Array.from(e.target.files ?? []).forEach(f => {
@@ -87,34 +119,6 @@ function BusinessInfoModal({ store, onClose }: { store: StoreData; onClose: () =
     });
   };
 
-  const Field = ({ label, field, icon: Icon, placeholder, textarea = false }: {
-    label: string; field: keyof typeof form; icon: any; placeholder: string; textarea?: boolean;
-  }) => (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</label>
-      <div className="relative">
-        <Icon className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-        {textarea ? (
-          <textarea
-            value={form[field]}
-            onChange={e => u(field, e.target.value)}
-            placeholder={placeholder}
-            rows={3}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-colors resize-none"
-          />
-        ) : (
-          <input
-            value={form[field]}
-            onChange={e => u(field, e.target.value)}
-            placeholder={placeholder}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-secondary/30 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
-          />
-        )}
-      </div>
-      {errors[field] && <p className="text-xs text-red-500">{errors[field]}</p>}
-    </div>
-  );
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -125,12 +129,14 @@ function BusinessInfoModal({ store, onClose }: { store: StoreData; onClose: () =
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <Field label="Nombre del negocio *" field="business_name" icon={Store}    placeholder="Ej: Tienda El Amigo" />
-          <Field label="Categoría *"           field="category"      icon={Tag}      placeholder="Ej: Abarrotes, Panadería..." />
-          <Field label="Zona / Barrio *"       field="zone"          icon={MapPin}   placeholder="Ej: Centro, Norte..." />
-          <Field label="Dirección *"           field="address"       icon={MapPin}   placeholder="Calle y número" />
-          <Field label="Teléfono"              field="phone"         icon={Phone}    placeholder="Ej: 3001234567" />
-          <Field label="Descripción" field="description" icon={FileText} placeholder="Describe tu negocio..." textarea />
+          <StoreField label="Nombre del negocio *" value={form.business_name} onChange={v => u('business_name', v)} icon={Store}    placeholder="Ej: Tienda El Amigo"      error={errors.business_name} />
+          <StoreField label="Categoría *"           value={form.category}      onChange={v => u('category', v)}      icon={Tag}      placeholder="Ej: Abarrotes, Panadería..." error={errors.category} />
+          <StoreField label="Dirección *"           value={form.address}       onChange={v => u('address', v)}       icon={MapPin}   placeholder="Calle y número"             error={errors.address} />
+          <StoreField label="Barrio"                value={form.neighborhood}  onChange={v => u('neighborhood', v)}  icon={MapPin}   placeholder="Ej: El Poblado" />
+          <StoreField label="Ciudad *"              value={form.city}          onChange={v => u('city', v)}          icon={MapPin}   placeholder="Ej: Cali"                   error={errors.city} />
+          <StoreField label="Zona / Sector"         value={form.zone}          onChange={v => u('zone', v)}          icon={MapPin}   placeholder="Ej: Centro, Norte..." />
+          <StoreField label="Teléfono"              value={form.phone}         onChange={v => u('phone', v)}         icon={Phone}    placeholder="Ej: 3001234567" />
+          <StoreField label="Descripción"           value={form.description}   onChange={v => u('description', v)}   icon={FileText} placeholder="Describe tu negocio..." textarea />
 
           {/* Imágenes */}
           <div className="space-y-2">
@@ -273,9 +279,83 @@ function HoursModal({ store, onClose }: { store: StoreData; onClose: () => void 
   );
 }
 
+// ─── Modal: Métodos de pago (tienda) ─────────────────────────────────────────
+
+const STORE_PAYMENT_OPTIONS = [
+  { key: 'cash',            label: 'Efectivo',         desc: 'Pago en efectivo al recibir',                emoji: '💵', gradient: 'from-emerald-500 to-teal-600' },
+  { key: 'contra_entrega',  label: 'Contra Entrega',   desc: 'Pago al recibir (cualquier método)',          emoji: '🏠', gradient: 'from-orange-500 to-amber-600' },
+  { key: 'nequi',           label: 'Nequi',            desc: 'Transferencia Nequi',                        emoji: '💜', gradient: 'from-violet-500 to-purple-600' },
+  { key: 'pse',             label: 'PSE',              desc: 'Débito bancario en línea',                   emoji: '🏦', gradient: 'from-blue-500 to-cyan-600'    },
+  { key: 'daviplata',       label: 'Daviplata',        desc: 'Transferencia Daviplata',                    emoji: '❤️', gradient: 'from-red-500 to-rose-600'     },
+];
+
+function PaymentMethodsModal({ store, onClose }: { store: StoreData; onClose: () => void }) {
+  const [selected, setSelected] = useState<string[]>(store.payment_methods ?? []);
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (key: string) =>
+    setSelected(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+
+  const handleSave = () => {
+    setSaving(true);
+    router.patch(`/store/${store.id}/payment-methods`, { payment_methods: selected }, {
+      onFinish: () => { setSaving(false); onClose(); },
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <h2 className="font-bold text-lg">Métodos de pago aceptados</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-5 space-y-3 max-h-[65vh] overflow-y-auto">
+          <p className="text-xs text-muted-foreground">Selecciona los métodos de pago que acepta tu tienda</p>
+          {STORE_PAYMENT_OPTIONS.map(({ key, label, desc, emoji, gradient }) => {
+            const active = selected.includes(key);
+            return (
+              <button
+                key={key}
+                onClick={() => toggle(key)}
+                className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left ${active ? 'border-violet-500 bg-violet-500/10' : 'border-border bg-background hover:bg-secondary/30'}`}
+              >
+                <div className={`w-12 h-12 rounded-2xl bg-linear-to-br ${gradient} flex items-center justify-center text-2xl shrink-0 shadow-sm`}>
+                  {emoji}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-semibold ${active ? 'text-violet-600' : ''}`}>{label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+                </div>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${active ? 'border-violet-500 bg-violet-500' : 'border-muted-foreground'}`}>
+                  {active && <span className="text-white text-xs font-bold">✓</span>}
+                </div>
+              </button>
+            );
+          })}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full py-3 rounded-xl bg-linear-to-r from-violet-600 to-purple-600 text-white font-semibold text-sm disabled:opacity-50 shadow-lg shadow-violet-500/30"
+          >
+            {saving ? 'Guardando...' : 'Guardar métodos de pago'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Modal: Soporte ───────────────────────────────────────────────────────────
 
 function SupportModal({ onClose }: { onClose: () => void }) {
+  const { support } = usePage().props as any;
+  const contacts = [
+    { label: 'WhatsApp', value: support?.phone ?? '+57 300 000 0000', href: `https://wa.me/${support?.whatsapp ?? '573000000000'}` },
+    { label: 'Email',    value: support?.email ?? 'soporte@orflash.com', href: `mailto:${support?.email ?? 'soporte@orflash.com'}` },
+  ];
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md">
@@ -290,10 +370,7 @@ function SupportModal({ onClose }: { onClose: () => void }) {
             ¿Tienes algún problema con tu tienda o necesitas ayuda? Contáctanos por los siguientes medios:
           </p>
           <div className="space-y-3">
-            {[
-              { label: 'WhatsApp',      value: '+57 300 000 0000', href: 'https://wa.me/573000000000' },
-              { label: 'Email',         value: 'soporte@orflash.com', href: 'mailto:soporte@orflash.com' },
-            ].map(item => (
+            {contacts.map(item => (
               <a
                 key={item.label}
                 href={item.href}
@@ -320,7 +397,7 @@ function SupportModal({ onClose }: { onClose: () => void }) {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 
-type ActiveModal = 'info' | 'hours' | 'support' | null;
+type ActiveModal = 'info' | 'hours' | 'payment' | 'support' | null;
 
 export default function StoreProfile() {
   const { auth, store, storeStats } = usePage<PageProps>().props;
@@ -333,7 +410,7 @@ export default function StoreProfile() {
       label: 'Información del negocio',
       icon: Store,
       color: 'from-violet-500 to-purple-600',
-      subtitle: store?.business_name,
+      subtitle: [store?.address, store?.city].filter(Boolean).join(', ') || store?.business_name,
       modal: 'info' as ActiveModal,
     },
     {
@@ -342,6 +419,15 @@ export default function StoreProfile() {
       color: 'from-blue-500 to-cyan-600',
       subtitle: store?.opening_time ? `${store.opening_time} – ${store.closing_time}` : 'No configurado',
       modal: 'hours' as ActiveModal,
+    },
+    {
+      label: 'Métodos de pago',
+      icon: CreditCard,
+      color: 'from-emerald-500 to-teal-600',
+      subtitle: store?.payment_methods?.length
+        ? store.payment_methods.join(', ')
+        : 'Sin métodos configurados',
+      modal: 'payment' as ActiveModal,
     },
     {
       label: 'Soporte',
@@ -436,9 +522,10 @@ export default function StoreProfile() {
       </PageTransition>
 
       {/* Modales */}
-      {activeModal === 'info'    && <BusinessInfoModal store={store} onClose={() => setActiveModal(null)} />}
-      {activeModal === 'hours'   && <HoursModal        store={store} onClose={() => setActiveModal(null)} />}
-      {activeModal === 'support' && <SupportModal                    onClose={() => setActiveModal(null)} />}
+      {activeModal === 'info'    && <BusinessInfoModal    store={store} onClose={() => setActiveModal(null)} />}
+      {activeModal === 'hours'   && <HoursModal           store={store} onClose={() => setActiveModal(null)} />}
+      {activeModal === 'payment' && <PaymentMethodsModal  store={store} onClose={() => setActiveModal(null)} />}
+      {activeModal === 'support' && <SupportModal                       onClose={() => setActiveModal(null)} />}
 
     </StoreLayout>
   );

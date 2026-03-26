@@ -2,6 +2,7 @@ import { PageTransition } from '@/components/shared/Animations';
 import { Power, Clock, ShoppingBag, CheckCircle, Pencil, X, Save } from 'lucide-react';
 import StoreLayout from '@/layouts/StoreLayout';
 import { router, usePage } from '@inertiajs/react';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 import { useState } from 'react';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -142,6 +143,7 @@ function HoursModal({ store, onClose }: { store: Store; onClose: () => void }) {
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export default function StoreBusinessStatus() {
+  useAutoRefresh(60_000);
   const { store, todayOrders = 0 } = usePage<PageProps>().props;
   const [showHoursModal, setShowHoursModal] = useState(false);
 

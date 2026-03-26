@@ -11,6 +11,34 @@ const categories = ['Abarrotes', 'Farmacia', 'Panadería', 'Carnicería', 'Verdu
 const zones      = ['Centro', 'Norte', 'Sur', 'Oriente', 'Occidente', 'Toda la ciudad'];
 const allDays    = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
+// ─── Campo genérico (fuera del componente para evitar re-montaje) ─────────────
+
+function CreateField({
+  label, field, value, onChange, type = 'text', placeholder, icon: Icon, required = false, error,
+}: {
+  label: string; field?: string; value: string; onChange: (v: string) => void;
+  type?: string; placeholder?: string; icon: any; required?: boolean; error?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium flex items-center gap-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative">
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type={type}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full pl-10 pr-4 h-11 rounded-xl border border-border bg-background text-sm outline-none focus:border-violet-500 transition-colors"
+        />
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
 export default function StoreCreate() {
   const { errors } = usePage().props as any;
   const [processing, setProcessing] = useState(false);
@@ -89,25 +117,6 @@ export default function StoreCreate() {
     });
   };
 
-  const Field = ({ label, field, type = 'text', placeholder, icon: Icon, required = false }: any) => (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium flex items-center gap-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <div className="relative">
-        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
-          type={type}
-          value={form[field as keyof typeof form] as string}
-          onChange={(e) => update(field, e.target.value)}
-          placeholder={placeholder}
-          className="w-full pl-10 pr-4 h-11 rounded-xl border border-border bg-background text-sm outline-none focus:border-violet-500 transition-colors"
-        />
-      </div>
-      {errors?.[field] && <p className="text-xs text-red-500">{errors[field]}</p>}
-    </div>
-  );
-
   return (
     <StoreLayout>
       <PageTransition className="space-y-6 max-w-3xl">
@@ -133,12 +142,12 @@ export default function StoreCreate() {
             </div>
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <Field label="Razón social" field="business_name" placeholder="Nombre oficial del negocio" icon={Building} required />
+                <CreateField label="Razón social" value={form.business_name} onChange={v => update('business_name', v)} placeholder="Nombre oficial del negocio" icon={Building} required error={errors?.business_name} />
               </div>
-              <Field label="NIT (opcional)" field="nit" placeholder="Ej: 900123456-1" icon={FileText} />
-              <Field label="Teléfono" field="phone" placeholder="Ej: 3001234567" icon={Phone} />
+              <CreateField label="NIT (opcional)" value={form.nit}   onChange={v => update('nit', v)}   placeholder="Ej: 900123456-1"  icon={FileText} error={errors?.nit} />
+              <CreateField label="Teléfono"       value={form.phone} onChange={v => update('phone', v)} placeholder="Ej: 3001234567"   icon={Phone}    error={errors?.phone} />
               <div className="sm:col-span-2">
-                <Field label="Dirección" field="address" placeholder="Calle 45 #12-30, Barrio..." icon={MapPin} required />
+                <CreateField label="Dirección" value={form.address} onChange={v => update('address', v)} placeholder="Calle 45 #12-30, Barrio..." icon={MapPin} required error={errors?.address} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Categoría <span className="text-red-500">*</span></label>

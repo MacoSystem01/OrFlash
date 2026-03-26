@@ -1,6 +1,7 @@
 import { PageTransition } from '@/components/shared/Animations';
 import AdminLayout from '@/layouts/AdminLayout';
 import { router, usePage } from '@inertiajs/react';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 import { useState, useRef } from 'react';
 import {
   Plus, Trash2, ToggleLeft, ToggleRight,
@@ -195,6 +196,7 @@ function FooterItemModal({
 }
 
 export default function AdminFooterItems() {
+  useAutoRefresh(60_000);
   const { items, flash } = usePage<PageProps>().props;
   const [showModal, setShowModal] = useState(false);
   const [editing,   setEditing]   = useState<FooterItem | null>(null);

@@ -2,7 +2,28 @@
   "permissions": {
     "allow": [
       "Bash(php artisan:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(composer require:*)",
+      "Read(//c/Users/mauro/.claude/projects/c--xampp-htdocs-orflash/memory/**)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -l \"Schema::create\\(''wallets''\" /c/xampp/htdocs/orflash/database/migrations/*.php)",
+      "Bash(php -l app/Http/Controllers/Auth/LoginController.php)",
+      "Bash(php -l app/Http/Controllers/Admin/AdminController.php)",
+      "Bash(php -l app/Http/Controllers/Order/OrderController.php)",
+      "Bash(php -l app/Http/Controllers/Payment/PaymentController.php)",
+      "Bash(php -l app/Http/Controllers/Store/ProductController.php)",
+      "Bash(php -l c:/xampp/htdocs/orflash/app/Http/Controllers/Auth/LoginController.php)",
+      "Bash(php -l c:/xampp/htdocs/orflash/app/Http/Controllers/Admin/AdminController.php)",
+      "Bash(php -l c:/xampp/htdocs/orflash/app/Http/Controllers/Order/OrderController.php)",
+      "Bash(php -l c:/xampp/htdocs/orflash/app/Http/Controllers/Payment/PaymentController.php)",
+      "Bash(php -l c:/xampp/htdocs/orflash/app/Http/Controllers/Store/ProductController.php)",
+      "Bash(find /c/xampp/htdocs/orflash/resources/js -type f -name *[Mm]odal* -o -name *[Ff]orm* -o -name *[Dd]ialog*)",
+      "Bash(php -l c:/xampp/htdocs/orflash/app/Http/Controllers/Client/ReviewController.php)",
+      "Bash(php -l c:/xampp/htdocs/orflash/app/Http/Controllers/Client/ClientProfileController.php)",
+      "Bash(php -l c:/xampp/htdocs/orflash/app/Http/Controllers/Auth/RegisterController.php)",
+      "Bash(php -l c:/xampp/htdocs/orflash/app/Http/Controllers/Driver/DriverController.php)",
+      "Bash(php -l c:/xampp/htdocs/orflash/app/Http/Middleware/HandleInertiaRequests.php)",
+      "Bash(find /c/xampp/htdocs/orflash/node_modules/@inertiajs -name *.d.ts)"
     ]
   }
 }

@@ -1,7 +1,9 @@
+import { useState, useEffect, useRef } from 'react';
 import { PageTransition } from '@/components/shared/Animations';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { router, usePage } from '@inertiajs/react';
-import { Package, ArrowRight, ShoppingBag, Clock } from 'lucide-react';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
+import { Package, ArrowRight, ShoppingBag, Clock, XCircle } from 'lucide-react';
 import ClientLayout from '@/layouts/ClientLayout';
 import { formatPrice } from '@/lib/format';
 
@@ -30,6 +32,7 @@ interface Order {
   status: string;
   payment_status: string;
   created_at: string;
+  cancelled_at: string | null;
 }
 
 interface PageProps {
@@ -52,37 +55,86 @@ const statusLabel: Record<string, string> = {
 };
 
 const paymentBadge = (status: string) => {
-  if (status === 'approved') {
-    return (
-      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-        Pagado
-      </span>
-    );
-  }
-  if (status === 'pending') {
-    return (
-      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">
-        Pago pendiente
-      </span>
-    );
-  }
+  const map: Record<string, { label: string; cls: string }> = {
+    approved:        { label: 'Pagado',             cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' },
+    cod:             { label: 'Pago al recibir',    cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'             },
+    pending:         { label: 'Pago pendiente',     cls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'     },
+    pending_payment: { label: 'Esperando pago',     cls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'     },
+    declined:        { label: 'Pago rechazado',     cls: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'                 },
+    voided:          { label: 'Pago anulado',       cls: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'            },
+  };
+  const entry = map[status] ?? { label: 'Sin pago', cls: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' };
   return (
-    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-      Pago fallido
+    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${entry.cls}`}>
+      {entry.label}
     </span>
   );
 };
 
 // ─── Página ───────────────────────────────────────────────────────────────────
 
+const SEEN_KEY = 'orflash_seen_cancelled';
+
+function getSeenIds(): number[] {
+  try { return JSON.parse(sessionStorage.getItem(SEEN_KEY) ?? '[]'); }
+  catch { return []; }
+}
+function markSeen(id: number) {
+  const seen = getSeenIds();
+  if (!seen.includes(id)) sessionStorage.setItem(SEEN_KEY, JSON.stringify([...seen, id]));
+}
+
 export default function ClientOrders() {
+  useAutoRefresh();
   const { orders } = usePage<PageProps>().props;
+
+  const [cancelledPopup, setCancelledPopup] = useState<Order | null>(null);
+  const shownRef = useRef(false);
+
+  useEffect(() => {
+    if (shownRef.current) return;
+    const seen = getSeenIds();
+    const unseen = orders.find(o => o.status === 'cancelled' && !seen.includes(o.id));
+    if (unseen) {
+      setCancelledPopup(unseen);
+      markSeen(unseen.id);
+      shownRef.current = true;
+    }
+  }, [orders]);
 
   const active = orders.filter(o => !['delivered', 'cancelled'].includes(o.status));
   const completed = orders.filter(o => ['delivered', 'cancelled'].includes(o.status));
 
   return (
     <ClientLayout>
+
+      {/* Modal: pedido cancelado */}
+      {cancelledPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl bg-card border border-red-500/30 shadow-2xl p-7 text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto">
+              <XCircle className="w-9 h-9 text-red-500" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-red-600">Pedido cancelado</h2>
+              <p className="text-sm text-muted-foreground">
+                Tu pedido <span className="font-mono font-semibold">#{String(cancelledPopup.id).padStart(8, '0')}</span> de{' '}
+                <span className="font-semibold">{cancelledPopup.store.business_name}</span> fue cancelado.
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Si realizaste algún pago será reembolsado automáticamente.
+              </p>
+            </div>
+            <button
+              onClick={() => setCancelledPopup(null)}
+              className="w-full py-3.5 rounded-2xl bg-linear-to-r from-violet-600 to-purple-600 text-white font-bold text-sm shadow-lg shadow-violet-500/30 active:scale-95 transition-all"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
       <PageTransition className="p-4 space-y-5">
 
         {/* Header */}

@@ -1,4 +1,13 @@
 import { Form } from '@inertiajs/react';
+
+// Elimina scripts y event handlers de strings SVG generados por el servidor
+// para prevenir XSS almacenado en caso de compromiso del backend.
+function sanitizeSvg(svg: string): string {
+    return svg
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/\bon\w+\s*=/gi, 'data-blocked=')
+        .replace(/javascript\s*:/gi, 'blocked:');
+}
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { Check, Copy, ScanLine } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -79,7 +88,7 @@ function TwoFactorSetupStep({
                                     <div
                                         className="aspect-square w-full rounded-lg bg-white p-2 [&_svg]:size-full"
                                         dangerouslySetInnerHTML={{
-                                            __html: qrCodeSvg,
+                                            __html: sanitizeSvg(qrCodeSvg),
                                         }}
                                         style={{
                                             filter:

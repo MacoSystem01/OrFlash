@@ -9,6 +9,7 @@ import {
 import { useState, useEffect, useCallback } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/layouts/AdminLayout';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -203,6 +204,7 @@ function UserDetailModal({
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export default function AdminUsers() {
+  useAutoRefresh(60_000);
   const { users, flash } = usePage<PageProps>().props;
 
   const [search,       setSearch]   = useState('');

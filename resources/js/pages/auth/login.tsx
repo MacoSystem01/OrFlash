@@ -10,6 +10,7 @@ import { custom as store } from '@/routes/login';
 import { register } from '@/routes';
 import { request } from '@/routes/password';
 import { Zap, Mail, Lock } from 'lucide-react';
+import GoogleButton from '@/components/shared/GoogleButton';
 
 type Props = {
   status?: string;
@@ -23,7 +24,7 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
       <Head title="Iniciar sesión" />
 
       {/* Panel izquierdo — decorativo */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-violet-600 via-purple-600 to-blue-700 relative overflow-hidden flex-col items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-violet-600 via-purple-600 to-blue-700 relative overflow-hidden flex-col items-center justify-center p-12">
         {/* Círculos decorativos */}
         {/* <div className="absolute top-[-80px] left-[-80px] w-80 h-80 rounded-full bg-white/10" />
         <div className="absolute bottom-[-60px] right-[-60px] w-64 h-64 rounded-full bg-white/10" />
@@ -64,7 +65,7 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
         <div className="w-full max-w-md space-y-8">
           {/* Logo móvil */}
           <div className="flex lg:hidden items-center justify-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/40">
+            <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/40">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <span className="text-2xl font-bold">OrFlash</span>
@@ -163,11 +164,20 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
                   type="submit"
                   tabIndex={4}
                   disabled={processing}
-                  className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-sm shadow-lg shadow-violet-500/30 hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full h-12 rounded-xl bg-linear-to-r from-violet-600 to-purple-600 text-white font-bold text-sm shadow-lg shadow-violet-500/30 hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {processing && <Spinner />}
                   {processing ? 'Ingresando...' : 'Iniciar sesión'}
                 </button>
+
+                {/* Separador */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">o</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
+                <GoogleButton />
 
                 {canRegister && (
                   <p className="text-center text-sm text-muted-foreground">

@@ -1,6 +1,7 @@
 import { PageTransition } from '@/components/shared/Animations';
 import AdminLayout from '@/layouts/AdminLayout';
 import { router, usePage } from '@inertiajs/react';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
 import { useState, useRef } from 'react';
 import {
   Plus, Trash2, ToggleLeft, ToggleRight,
@@ -160,6 +161,7 @@ function CarouselModal({
 }
 
 export default function AdminCarousels() {
+  useAutoRefresh(60_000);
   const { carousels, flash } = usePage<PageProps>().props;
   const [modalItem, setModal] = useState<Carousel | null | 'new'>('new' as any);
 

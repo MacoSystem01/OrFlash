@@ -1,8 +1,10 @@
 import { PageTransition, StaggerList, StaggerItem } from '@/components/shared/Animations';
-import { MapPin, Star, Search, Filter, ToggleLeft, ToggleRight, CheckCircle, AlertCircle, ShieldCheck } from 'lucide-react';
+import { MapPin, Star, Search, Filter, ToggleLeft, ToggleRight, CheckCircle, AlertCircle, ShieldCheck, Settings2, X } from 'lucide-react';
 import AdminLayout from '@/layouts/AdminLayout';
 import { useState, useEffect, useCallback } from 'react';
 import { usePage, router } from '@inertiajs/react';
+import { useAutoRefresh } from '@/hooks/use-auto-refresh';
+import { formatPrice } from '@/lib/format';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -16,6 +18,8 @@ interface Store {
   status: 'active' | 'inactive' | 'pending';
   is_open: boolean;
   images: string[] | null;
+  delivery_fee: number | null;
+  coverage_radius_m: number;
   user?: { name: string; email: string };
 }
 
@@ -65,15 +69,113 @@ const statusMap = {
   pending:  { label: 'Pendiente', cls: 'bg-yellow-100  text-yellow-700  dark:bg-yellow-900/40  dark:text-yellow-300'  },
 };
 
+// ─── Modal configuración de domicilio ─────────────────────────────────────────
+
+function DeliveryModal({ store, onClose }: { store: Store; onClose: () => void }) {
+  const [fee,    setFee]    = useState(store.delivery_fee?.toString() ?? '');
+  const [radius, setRadius] = useState(store.coverage_radius_m?.toString() ?? '2000');
+  const [saving, setSaving] = useState(false);
+
+  const radiusNum = Math.min(2000, Math.max(100, parseInt(radius) || 2000));
+
+  const handleSave = () => {
+    setSaving(true);
+    router.patch(`/admin/stores/${store.id}/delivery`, {
+      delivery_fee:      fee === '' ? null : parseInt(fee),
+      coverage_radius_m: radiusNum,
+    }, {
+      preserveScroll: true,
+      onSuccess: onClose,
+      onFinish:  () => setSaving(false),
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-3xl bg-card border border-border shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold">Configuración de domicilio</h2>
+            <p className="text-xs text-muted-foreground truncate">{store.business_name}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-secondary transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Delivery fee */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold">Costo de domicilio ($ COP)</label>
+          <p className="text-xs text-muted-foreground">Déjalo vacío para usar el valor global del sistema.</p>
+          <input
+            type="number"
+            min="0"
+            step="100"
+            value={fee}
+            onChange={e => setFee(e.target.value)}
+            placeholder="Ej: 2500"
+            className="w-full px-4 py-2.5 rounded-xl border border-border bg-secondary text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+          />
+        </div>
+
+        {/* Coverage radius */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-semibold">Radio de cobertura</label>
+            <span className="text-sm font-bold text-violet-600">{radiusNum} m</span>
+          </div>
+          <p className="text-xs text-muted-foreground">Máximo 2 km. El repartidor solo verá pedidos dentro de este radio.</p>
+          <input
+            type="range"
+            min="100"
+            max="2000"
+            step="100"
+            value={radiusNum}
+            onChange={e => setRadius(e.target.value)}
+            className="w-full accent-violet-600"
+          />
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>100 m</span>
+            <span>1 km</span>
+            <span>2 km (máx)</span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-1">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-secondary transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-xl bg-linear-to-r from-violet-600 to-purple-600 text-white text-sm font-bold shadow-lg shadow-violet-500/30 disabled:opacity-60 active:scale-95 transition-all"
+          >
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 // ─── Página ───────────────────────────────────────────────────────────────────
 
 export default function AdminStores() {
+  useAutoRefresh(60_000);
   const { stores } = usePage<PageProps>().props;
 
-  const [search,   setSearch]   = useState('');
-  const [filter,   setFilter]   = useState<FilterType>('all');
-  const [toggling, setToggling] = useState(false);
-  const [toast,    setToast]    = useState<{ message: string; type: ToastType } | null>(null);
+  const [search,         setSearch]         = useState('');
+  const [filter,         setFilter]         = useState<FilterType>('all');
+  const [toggling,       setToggling]       = useState(false);
+  const [toast,          setToast]          = useState<{ message: string; type: ToastType } | null>(null);
+  const [deliveryStore,  setDeliveryStore]  = useState<Store | null>(null);
 
   const counts = {
     active:   stores.filter(s => s.status === 'active').length,
@@ -125,6 +227,11 @@ export default function AdminStores() {
 
   return (
     <AdminLayout>
+
+      {deliveryStore && (
+        <DeliveryModal store={deliveryStore} onClose={() => setDeliveryStore(null)} />
+      )}
+
       <PageTransition className="space-y-6">
 
         {/* Header */}
@@ -256,39 +363,57 @@ export default function AdminStores() {
                         <span className="truncate">{store.address}</span>
                       </div>
 
+                      {/* Domicilio */}
+                      {store.delivery_fee != null && (
+                        <p className="text-[10px] text-violet-600 font-semibold mt-1">
+                          🛵 {formatPrice(store.delivery_fee)} · {store.coverage_radius_m}m
+                        </p>
+                      )}
+
                       <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border">
                         <span className="flex items-center gap-0.5 text-xs font-semibold text-amber-500">
                           <Star className="w-3 h-3 fill-amber-500" />
                           {store.rating > 0 ? store.rating : '—'}
                         </span>
 
-                        {/* Botón según estado */}
-                        {isPending ? (
+                        <div className="flex items-center gap-1">
+                          {/* Botón configurar domicilio */}
                           <button
-                            onClick={() => handleApprove(store)}
-                            disabled={toggling}
-                            title="Aprobar tienda"
-                            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 text-[10px] font-semibold hover:bg-emerald-500/20 transition-colors disabled:opacity-40"
+                            onClick={() => setDeliveryStore(store)}
+                            title="Configurar domicilio"
+                            className="p-1 rounded-lg text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
                           >
-                            <ShieldCheck className="w-3 h-3" /> Aprobar
+                            <Settings2 className="w-3.5 h-3.5" />
                           </button>
-                        ) : (
-                          <button
-                            onClick={() => handleToggle(store)}
-                            disabled={toggling}
-                            title={isActive ? 'Desactivar tienda' : 'Activar tienda'}
-                            className={`p-1 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                              isActive
-                                ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-                                : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
-                            }`}
-                          >
-                            {isActive
-                              ? <ToggleLeft  className="w-4 h-4" />
-                              : <ToggleRight className="w-4 h-4" />
-                            }
-                          </button>
-                        )}
+
+                          {/* Botón según estado */}
+                          {isPending ? (
+                            <button
+                              onClick={() => handleApprove(store)}
+                              disabled={toggling}
+                              title="Aprobar tienda"
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 text-[10px] font-semibold hover:bg-emerald-500/20 transition-colors disabled:opacity-40"
+                            >
+                              <ShieldCheck className="w-3 h-3" /> Aprobar
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleToggle(store)}
+                              disabled={toggling}
+                              title={isActive ? 'Desactivar tienda' : 'Activar tienda'}
+                              className={`p-1 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                isActive
+                                  ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                  : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                              }`}
+                            >
+                              {isActive
+                                ? <ToggleLeft  className="w-4 h-4" />
+                                : <ToggleRight className="w-4 h-4" />
+                              }
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 

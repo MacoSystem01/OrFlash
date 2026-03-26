@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\ClientPaymentMethod;
 use App\Models\ClientProfile;
+use App\Models\Product;
 use App\Models\Store;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class ClientProfileController extends Controller
@@ -21,6 +24,7 @@ class ClientProfileController extends Controller
     public function home()
     {
         $stores = Store::where('status', 'active')
+            ->withCount(['products' => fn ($q) => $q->where('is_available', true)])
             ->latest()
             ->get([
                 'id', 'business_name', 'category', 'zone', 'address',
@@ -28,8 +32,18 @@ class ClientProfileController extends Controller
                 'description', 'images',
             ]);
 
+        $products = Product::whereIn('store_id', $stores->pluck('id'))
+            ->where('is_available', true)
+            ->with('store:id,business_name,category,images')
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get([
+                'id', 'store_id', 'name', 'category', 'price', 'images', 'description', 'stock',
+            ]);
+
         return Inertia::render('client/home', [
-            'stores' => $stores,
+            'stores'   => $stores,
+            'products' => $products,
         ]);
     }
 
@@ -51,6 +65,8 @@ class ClientProfileController extends Controller
                 'references'   => $profile->references,
             ] : null,
             'paymentMethods' => $paymentMethods,
+            'wompiEnabled'   => !empty(config('services.wompi.public_key')),
+            'deliveryFee'    => (int) SystemSetting::getValue('finances.deliveryFee', 2500),
         ]);
     }
 
@@ -90,9 +106,9 @@ class ClientProfileController extends Controller
     {
         $request->validate([
             'name'            => 'required|string|max:255',
-            'phone'           => 'nullable|string|max:20',
-            'alternate_phone' => 'nullable|string|max:20',
-            'cedula'          => 'nullable|string|max:20',
+            'phone'           => ['nullable', 'regex:/^(\+57)?[0-9]{10}$/'],
+            'alternate_phone' => ['nullable', 'regex:/^(\+57)?[0-9]{10}$/'],
+            'cedula'          => ['nullable', 'regex:/^[0-9]{6,20}$/'],
         ]);
 
         /** @var User $user */
@@ -149,19 +165,28 @@ class ClientProfileController extends Controller
         return back()->with('success', 'Notificaciones actualizadas.');
     }
 
+    // Bancos habilitados para PSE — lista sincronizada con el frontend
+    private const PSE_BANKS = [
+        'Bancolombia', 'Banco de Bogotá', 'Davivienda', 'BBVA',
+        'Banco Popular', 'Banco Agrario', 'Banco Caja Social',
+        'Banco Falabella', 'Banco Pichincha', 'Banco Santander',
+        'Bancoomeva', 'Citibank', 'Colpatria', 'Nequi',
+        'Daviplata', 'Lulo Bank', 'Rappipay', 'Nubank',
+    ];
+
     public function savePaymentMethod(Request $request)
     {
         $request->validate([
-            'type'             => 'required|in:cash,pse,nequi,daviplata',
+            'type'             => 'required|in:cash,pse,nequi,daviplata,contra_entrega',
             'is_default'       => 'boolean',
-            'pse_bank'         => 'required_if:type,pse|nullable|string|max:100',
+            'pse_bank'         => ['required_if:type,pse', 'nullable', 'in:' . implode(',', self::PSE_BANKS)],
             'pse_person_type'  => 'required_if:type,pse|nullable|in:natural,juridica',
             'pse_account_type' => 'nullable|in:ahorros,corriente',
             'pse_email'        => 'required_if:type,pse|nullable|email|max:255',
-            'pse_document'     => 'required_if:type,pse|nullable|string|max:20',
-            'nequi_phone'      => 'required_if:type,nequi|nullable|string|max:20',
+            'pse_document'     => ['required_if:type,pse', 'nullable', 'regex:/^\d{6,20}$/'],
+            'nequi_phone'      => ['required_if:type,nequi', 'nullable', 'regex:/^3[0-9]{9}$/'],
             'nequi_name'       => 'nullable|string|max:100',
-            'daviplata_phone'  => 'required_if:type,daviplata|nullable|string|max:20',
+            'daviplata_phone'  => ['required_if:type,daviplata', 'nullable', 'regex:/^3[0-9]{9}$/'],
         ]);
 
         if ($request->is_default) {
@@ -179,17 +204,58 @@ class ClientProfileController extends Controller
             ])
         );
 
+        // Si la llamada viene del checkout (fetch sin X-Inertia), retornar JSON
+        if (!$request->hasHeader('X-Inertia')) {
+            return response()->json(['success' => true]);
+        }
+
         return back()->with('success', 'Método de pago guardado correctamente.');
     }
 
     public function deletePaymentMethod(Request $request)
     {
-        $request->validate(['type' => 'required|in:pse,nequi,daviplata']);
+        $request->validate(['type' => 'required|in:pse,nequi,daviplata,contra_entrega']);
 
         ClientPaymentMethod::where('user_id', Auth::id())
             ->where('type', $request->type)
             ->delete();
 
         return back()->with('success', 'Método de pago eliminado.');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Configuración inicial — fase 2 (modal post-registro)
+    |--------------------------------------------------------------------------
+    */
+    public function completeSetup(Request $request)
+    {
+        $request->validate([
+            'address'         => 'required|string|max:255',
+            'neighborhood'    => 'required|string|max:100',
+            'city'            => 'required|string|max:100',
+            'references'      => 'nullable|string|max:500',
+            'alternate_phone' => ['nullable', 'regex:/^(\+57)?[0-9]{10}$/'],
+            'profile_photo'   => 'nullable|file|mimes:jpg,jpeg,png,webp|max:3072',
+        ]);
+
+        $profilePhoto = null;
+        if ($request->hasFile('profile_photo')) {
+            $profilePhoto = $request->file('profile_photo')->store('profiles', 'public');
+        }
+
+        ClientProfile::updateOrCreate(
+            ['user_id' => Auth::id()],
+            [
+                'address'         => $request->address,
+                'neighborhood'    => $request->neighborhood,
+                'city'            => $request->city,
+                'references'      => $request->references,
+                'alternate_phone' => $request->alternate_phone,
+                'profile_photo'   => $profilePhoto,
+            ]
+        );
+
+        return redirect('/client/home')->with('success', '¡Perfil configurado! Bienvenido a OrFlash.');
     }
 }
